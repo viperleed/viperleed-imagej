@@ -1,5 +1,4 @@
 # viperleed-imagej
-
 ViPErLEED-ImageJ is a collection of ImageJ plugins for spot tracking and intensity evaluation as well as selection and editing of I(V) curves created by the Spot Tracker.
 The output of the I(V) Curve Editor can be used as experimental data (`EXPBEAMS.csv`) for structure optimization.
 
