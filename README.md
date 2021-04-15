@@ -12,9 +12,9 @@ If `Help>Update ImageJ` did not work (typically because of missing write permiss
   http://wsr.imagej.net/download/daily-build/
 and place it in the ImageJ directory (replace the old one). On MacIntosh OS X, you have to right-click the ImageJ icon and select `Show Package Contents`. The `ij.jar` file is in `Contents/Resources/Java`.
 
-Place the `ViPErLEED_ImageJ_plugins.jar` file into ImageJ/plugins or an immediate subdirectory thereof and restart ImageJ.
+Place the `ViPErLEED_ImageJ_plugins.jar` file (from the [Releases](https://github.com/viperleed/viperleed-betatest/releases)) into ImageJ/plugins or an immediate subdirectory thereof and restart ImageJ.
 The ViPErLEED plugins will appear in Plugins>ViPErLEED:
-- Open Aida LEED video (opens `.vid` files of the legacy AIDA LEED data aquisition system)
+- Open Aida LEED video (opens `.vid` files of the legacy EE2000/EE2010 "AIDA" LEED data aquisition system)
 - LEED Spot Tracker
 - LEED I(V) Curve Editor
 
