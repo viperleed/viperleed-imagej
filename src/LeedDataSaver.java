@@ -41,7 +41,6 @@ public class LeedDataSaver implements Runnable {
     boolean askToDiscard;
     boolean interactive;
     String errorMessage;
-    static String lastStatusText; //remembers text next to Spot Tracker button
 
     /**
      *  Creator
@@ -90,17 +89,19 @@ public class LeedDataSaver implements Runnable {
 
                     saved = askAndSaveData(directory);
                     spotTracker.enableAndHighlightComponents(true);
-                    lastStatusText = saved ? "Saved ("+prefix+")" : "";
-                    spotTracker.setButtonLabelText(LEED_Spot_Tracker.SAVE_BUTTON, lastStatusText);
+                    String statusText = saved ? "Saved ("+prefix+")" : "";
+                    spotTracker.setButtonLabelText(LEED_Spot_Tracker.SAVE_BUTTON, statusText);
                 }
             } while (askToDiscard && !saved);
         } catch (Exception e) {
             IJ.handleException(e);
         }
-        if (saved)
+        if (saved) {
             spotTracker.setDataSaved(directory, prefix);
-        else
+        } else {
             spotTracker.enableAndHighlightComponents(true);
+            spotTracker.setButtonLabelText(LEED_Spot_Tracker.SAVE_BUTTON, "");
+        }
     }
 
     /** Non-interactive operation.
@@ -111,11 +112,6 @@ public class LeedDataSaver implements Runnable {
             spotTracker.setDataSaved(directory, prefix);
         return saved ? null :
                 "ERROR: " + (errorMessage== null ? "Could not save data" : errorMessage);
-    }
-
-    /** Returns the 'saved' text of the last saving */
-    public static String getLastStatusText() {
-        return lastStatusText;
     }
 
     boolean askAndSaveData(String directory) {

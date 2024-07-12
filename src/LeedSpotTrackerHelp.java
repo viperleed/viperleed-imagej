@@ -477,11 +477,20 @@ public class LeedSpotTrackerHelp {
             "<dt>Select stack slice for...</dt><dd>Asks the user for the energy (or other <i>x</i>-axis variable, e.g., 'time'; "+
             "see <a href='#setEnergies'>Set Energies, I0, t</a>) and selects the stack slice (i.e., the image) for this energy.</dd>"+
             "<dt><a name='createMask'>Create mask...</a></dt><dd>Facilitates creating a mask for a stack of LEED images. "+
-            "There are two sliders. Initially move the threshold slider to obtain a smooth outline of the screen area. "+
+            "If a flat field is available, the tool is based on the flat field as an input (averaging over the stack slices); "+
+            "otherwise it uses the main input stack (the standard deviation of the intensity vs. energy for each pixel). "+
+            "There are two sliders: Initially move the threshold slider to obtain a smooth outline of the screen area "+
+            "and the edge of the electron source (with the arm holding it). "+
             "In the second step, you may shrink or grow that area by a few pixels to refine it. "+
-            "(You may use Image&gt;Adjust&gt;Brightness&amp;Contrast to better see the border of the LEED image.) "+
+            "In addition, if the program could guess the outline of the LEED screen, you can select "+
+            "&quot;Limit to elliptical fit&quot; and you can try to correct for the "+
+            "radius dependence of the intensity, which is typically present in the input images. "+
+            "To evaluate the result, you may use Image&gt;Adjust&gt;Brightness&amp;Contrast "+
+            "to better see the border of the LEED image in the &quot;SpotTracking&quot; stack. "+
             "When done, select the mask created in the man Spot Tracker panel. "+
-            "If required, use the standard ImageJ selection tools (oval, polygon, freehand) "+
+            "If required, use the standard "+
+            "<a href='https://imagej.net/ij/docs/guide/146-19.html'>ImageJ selection tools</a> "+
+            "(oval, polygon, freehand) "+
             "and the Edit&gt;Fill, Clear and Clear Outside commands to further refine the mask.</dd>"+
             "<dt>Highlight beams...</dt><dd>Shows the selected beam(s) with a thicker circle. Useful in case "+
             "of complex superstructures and to delete these from the output (see &quot;Delete highlighted beams...&quot;, below).</dd>"+
@@ -590,14 +599,23 @@ public class LeedSpotTrackerHelp {
     private static final String HELP_LICENSE =
             "<h2><a name='spottrackerLicense'>License</a></h2>"+
             "<p>The code is licensed under <a href='http://www.gnu.org/licenses/gpl-3.0.html'>GNU General Public License v3.0</a> "+
-            "or later (GPL-3.0-or-later). "+
-            "The authors may decide later to put part of the auxiliary code in this work into the public domain, "+
+            "or later (GPL-3.0-or-later).</p>"+
+            "<p>&nbsp;&nbsp;&nbsp;&nbsp;The ViPErLEED ImageJ plugin collection is free software: you can redistribute it and/or modify it "+
+            "under the terms of the GNU General Public License as published by the Free Software Foundation, "+
+            "either version 3 of the License, or (at your option) any later version.<br>&nbsp;&nbsp;&nbsp;&nbsp;"+
+            "The ViPErLEED ImageJ plugin collection is distributed in the hope that it will be useful, "+
+            "but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. "+
+            "See the GNU General Public License for more details.<br>&nbsp;&nbsp;&nbsp;&nbsp;"+
+            "You should have received a copy of the GNU General Public License along with these plugins. "+
+            "If not, see <a href='https://www.gnu.org/licenses/'>https://www.gnu.org/licenses/</a>.</p>"+
+            "<p>The authors may decide later to put part of the auxiliary code in this work into the public domain, "+
             "to allow incorporation into ImageJ if desired (ImageJ is in the public domain).</p>"+
-            "<p>This documentation is licensed under the <a href='http://creativecommons.org/licenses/by/4.0/'>Creative Commons Attribution 4.0</a> "+
+            "<p>The documentation, including the help texts, is licensed under the "+
+            "<a href='http://creativecommons.org/licenses/by/4.0/'>Creative Commons Attribution 4.0</a> "+
             "(CC BY 4.0) license.</p>"+
             "<p>When using this program (in its original or modified form) for scientific work, "+
             "please cite the paper describing the program [<a href='#paper'>1</a>].</p>"+
-            "<p>You should find a copy of these license texts and the source code in the zip/jar archive holding this plugin "+
+            "<p>A copy of these license texts and the source code is included in the jar archive holding this plugin "+
             "(use an unzip utility to view its contents).</p>";
     private static final String HELP_REFERENCES_HEADING =
             "<h2>References</h2>";

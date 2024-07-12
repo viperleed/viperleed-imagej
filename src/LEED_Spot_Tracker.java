@@ -32,10 +32,26 @@ import java.util.concurrent.atomic.*;
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
  *  Phys. Rev. Research, 2024. 
  *  @author Michael Schmid, IAP/TU Wien, 2019-2024
+ * 
+ *  The collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
  */
 
 public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener, ActionListener, WindowListener, MacroExtension, KeyListener {
-    static final public String VERSION = "1.00";
+    static final public String VERSION = "1.01";
     static final String PLUGIN_NAME = "LEED Spot Tracker";              //for dialog && error message titles
     static final String LOC_KEY_D = "leedSpotTracker.location";         //position of dialog
     static final String LOC_KEY_S = "leedSpotTracker.stackloc";         //position of SpotTracking stack
@@ -150,13 +166,13 @@ public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener,
     ImagePlus indexInputImp;        //the stack slice used for index input, gets saved with the data
 
     // The following is for ImageJ Compile&Run only, to ensure everything is updated if it is not directly called here.
-    // (we do not check for classes called by the LeedCurveEditor, assuming these are up to date)
+    // (we do not check for classes called by the LeedCurvePlotEditor, assuming these are up to date)
     LeedSpotAnalyzer dummy; LeedPlotter dummy2; LeedIndexSelector dummy3; LeedIntegerArray dummy4;
     LEED_Data_Quality_Statistics dummy5; LeedSmoother dummy6; LeedRFactor dummy7; Leed2DRegression dummy8;
     LeedScreenFitter dummy9; LeedAtomicFloatArray dummy10; LeedLinearRegression dummy11; LeedUtils dummy12;
     LeedOverlay dummy13; LeedDifferenceStack dummy14; Averaging_LEED_Stack dummy15; Linear_Fit_LEED_Stack dummy16;
-    LeedFlatFitter dummy17; LeedDarkFlatVirtualStack dummy18; Open_LEED_Movie dummy19;
-    Open_Aida_LEED_Video dummy20; LeedLabeledField dummy21; LeedImageSmoother dummy22;
+    LeedFlatFitter dummy17; LeedDarkFlatVirtualStack dummy18; Open_LEED_Movie dummy19; Open_Aida_LEED_Video dummy20;
+    LeedLabeledField dummy21; LeedImageSmoother dummy22; LeedEllipseEdgeFinder dummy23;
 
     //DEBUG static long t0;
 

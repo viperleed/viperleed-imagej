@@ -79,20 +79,29 @@ public class LEED_Commands extends PlugInFrame implements MouseListener {
             "<h2>Good to know</h2>"+
             "<p>If you want to have the <i>LEED Commands</i> panel present when ImageJ starts, add "+
             "<tt><font color='#cc0000'>run(&quot;LEED Commands&quot;);</font></tt> "+
-            "(with the semicolon) to the &quot;AutoRun&quot; macro of your StartupMacros file (In the ImageJ/plugins directory) or "+
+            "(with the semicolon) to the &quot;AutoRun&quot; macro of your StartupMacros file (In the ImageJ/macros directory) or "+
             "to the list of startup commands by selecting Edit&gt;Options&gt;Startup from the ImageJ Menu.</p>"+
             "<p>You can copy the contents of any help window like this one ("+LeedUtils.CTRL+"-a to select all and "+LeedUtils.CTRL+"-c). "+
             "Paste it into a text editor for printing, annotating, etc.</p>"+
             "<h2><a name='ivEditorLicense'>License</a></h2>"+
             "<p>The code is licensed under <a href='http://www.gnu.org/licenses/gpl-3.0.html'>GNU General Public License v3.0</a> "+
-            "or later (GPL-3.0-or-later). "+
-            "The authors may decide later to put part of the auxiliary code in this work into the public domain, "+
+            "or later (GPL-3.0-or-later).</p>"+
+            "<p>&nbsp;&nbsp;&nbsp;&nbsp;The ViPErLEED ImageJ plugin collection is free software: you can redistribute it and/or modify it "+
+            "under the terms of the GNU General Public License as published by the Free Software Foundation, "+
+            "either version 3 of the License, or (at your option) any later version.<br>&nbsp;&nbsp;&nbsp;&nbsp;"+
+            "The ViPErLEED ImageJ plugin collection is distributed in the hope that it will be useful, "+
+            "but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. "+
+            "See the GNU General Public License for more details.<br>&nbsp;&nbsp;&nbsp;&nbsp;"+
+            "You should have received a copy of the GNU General Public License along with these plugins. "+
+            "If not, see <a href='https://www.gnu.org/licenses/'>https://www.gnu.org/licenses/</a>.</p>"+
+            "<p>The authors may decide later to put part of the auxiliary code in this work into the public domain, "+
             "to allow incorporation into ImageJ if desired (ImageJ is in the public domain).</p>"+
-            "<p>This documentation is licensed under the <a href='http://creativecommons.org/licenses/by/4.0/'>Creative Commons Attribution 4.0</a> "+
+            "<p>The documentation, including the help texts, is licensed under the "+
+            "<a href='http://creativecommons.org/licenses/by/4.0/'>Creative Commons Attribution 4.0</a> "+
             "(CC BY 4.0) license.</p>"+
             "<p>When using this program (in its original or modified form) for scientific work, "+
             "please cite the paper describing the program [<a href='#paper'>1</a>].</p>"+
-            "<p>You should find a copy of these license texts and the source code in the zip/jar archive holding this plugin "+
+            "<p>A copy of these license texts and the source code is included in the jar archive holding this plugin "+
             "(use an unzip utility to view its contents).</p>"+
             "<h2>References</h2>"+
             "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva, "+

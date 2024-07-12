@@ -94,6 +94,23 @@ public class LeedSmoother {
         return ings;
     }
 
+    /**
+     * Calculates the kernel halfwidth m that comes closest to the desired
+     * band width, i.e., the frequency where the response decreases to
+     * -3 dB, i.e., 1/sqrt(2).
+     * @param bandwidth The desired band width, with respect to the sampling frequency.
+     *         The value of <code>bandwidth</code> must be less than 0.5
+     *         (the Nyquist frequency).
+     * @return The kernel halfwidth m.
+     */
+    public static int bandwidthToM(double bandwidth) {
+        final int degree = 4;
+        if (bandwidth <= 0 || bandwidth >= 0.5)
+            throw new IllegalArgumentException("Invalid bandwidth value: "+bandwidth);
+        double radius = (0.74548 + 0.24943*degree)/bandwidth - 1.0;
+        return (int)Math.round(radius);
+    }
+
     /** Returns the smoothed data in a new array.
      *  If the data contain NaN values, these are boundaries of a range for smoothing.
      */

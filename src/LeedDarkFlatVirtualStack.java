@@ -702,6 +702,28 @@ public class LeedDarkFlatVirtualStack extends VirtualStack {
         this.showProgress = b;
     }
 
+    /** Returns the average of the flat field stack, corrected by the average of dark2, when present.
+     *  Returns null if there is no flat or an input is anynchronously closed. */
+    public ImageProcessor getAverageFlat() {
+        if (flatImp == null) return null;
+        ImageStack flatAvgStack = averageSlices(flatImp);
+        if (flatAvgStack == null) return null;
+        ImageStack dark2AvgStack = null;
+        if (dark2Imp != null)
+            dark2AvgStack = averageSlices(dark2Imp);
+        ImageProcessor flatAvgIp = flatAvgStack.size() == 1 ?
+                flatAvgStack.getProcessor(1) : null;
+        if (flatAvgIp == null || flatAvgIp.getPixels() == null) return null;
+        ImageProcessor dark2AvgIp = dark2AvgStack != null && dark2AvgStack.size() == 1 ?
+                dark2AvgStack.getProcessor(1) : null;
+        if (dark2AvgIp != null) {
+            ImageStack differenceStack = new LeedDifferenceStack(flatAvgStack, dark2AvgStack,
+                    /*polynomialOrder=*/0, /*maskImp=*/null);
+            flatAvgIp = differenceStack.getProcessor(1);
+        }
+        return flatAvgIp;
+    }
+
     /** Returns an ImageStack with averaged slices of the input.
      *  Returns null if interrupted or an input is asynchronously closed. */
     ImageStack averageSlices(ImagePlus imp) {
