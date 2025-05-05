@@ -14,4 +14,4 @@ If `Help>Update ImageJ` did not work (typically because of missing write permiss
 
 ## Usage
 The Help texts of the plugins will provide some basic explanations on these plugins.
-For more information, see the documentation available at [viperleed.org](https://www.viperleed.org/content/imagej_plugins.html) and the paper at [arXiv:2406.18413](https://arxiv.org/abs/2406.18413).
+For more information, see the documentation available at [viperleed.org](https://www.viperleed.org/latest/content/imagej_plugins.html) and the paper: [Phys. Rev. Res. 7, 013006 (2025)](https://doi.org/10.1103/PhysRevResearch.7.013006), also available as [arXiv:2406.18413](https://arxiv.org/abs/2406.18413).
