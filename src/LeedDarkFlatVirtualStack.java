@@ -459,6 +459,8 @@ public class LeedDarkFlatVirtualStack extends VirtualStack {
                 cacheRefs[n] = doStrongCaching ? new SoftReference<float[]>(pixels) : new WeakReference<float[]>(pixels);
         } else {
             pixels = (float[])sourceIp.convertToFloat().getPixels();
+            if (sourceIp != null && pixels == sourceIp.getPixels())
+                pixels = (float[])pixels.clone();   //make sure we can't overwrite the original
         }
 
         nWorkingThreads.decrementAndGet();

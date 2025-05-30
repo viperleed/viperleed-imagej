@@ -164,20 +164,27 @@ public class LeedUtils {
 
     /** Reads the number (integer or floating with decimal point, not scientific format)
      *  immediately following one of the keywords.
-     *  The keywords are tried in the sequence given, the first match is returned.
+     *  If there are multiple occurrences of a keyword, uses the first occasion where
+     *  a number follows.
+     *  The keywords are tried in the sequence given; the first match is returned.
      *  Returns NaN if str is null, none of the keywords is found or the first keyword
      *  of the list encountered in the String is not followed by a valid number. */
     public static double getNumberFromString(String str, String[] keywords) {
         if (str == null) return Double.NaN;
         for (String key : keywords) {
-            int i = str.indexOf(key);
-            if (i >= 0) {
+            int start = 0;
+            while (start >= 0 && start < str.length()) {
+                int i = str.indexOf(key, start);
+                if (i < 0) break;                   //key not found
                 int offset = i+key.length();
                 if (offset >= str.length()) return Double.NaN;  //key at the end
-                int nPoint=0;
+                int nPoint = 0;
                 int p = offset;
                 char c = str.charAt(p);
-                if (!(isDigit(c) || c=='-')) return Double.NaN;  //does not start like a number
+                if (!(isDigit(c) || c=='-')) {      //does not start like a number
+                    start = p;
+                    continue;                       //maybe there is another occurrence of the key
+                }
                 while (++p < str.length()) {
                     c = str.charAt(p);
                     if (c == '.') nPoint++;
@@ -256,11 +263,17 @@ public class LeedUtils {
     }
 
     /** Returns whether a line is a comment line starting with any of these characters: #%!*
-     *  Null or empty lines also qualify as comment lines. */
+     *  If the first character is a quote, the comment may also occur after the quote. (This
+     *  if for CSV files written by excl or LibreOffice calc, where items can get embedded
+     *  in quotes if they contain an inner quote):
+     *  Null or empty lines and lines consisting of commas only also qualify as comment lines. */
     public static boolean isCommentLine(String line) {
         if (line == null || line.trim().length() == 0) return true;
         char c = line.charAt(0);
+        if (c=='"' && line.length()>1)
+            c = line.charAt(1);  // comment line may also start with "#
         if (c=='%' || c=='!' || c=='#' || c=='*') return true;
+        if (c==',' && line.matches("\\,*")) return true;
         return false;
     }
 
@@ -289,6 +302,14 @@ public class LeedUtils {
     /** Returns whether a number is integer within 1e-10 (absolute) numerical tolerance */
     public static boolean isInteger(double x) {
         return Math.abs(x - Math.round(x)) <= 1e-10;
+    }
+
+    /** Returns whether all arrey elments are integer within 1e-10 (absolute) numerical tolerance */
+    public static boolean isInteger(double[] a) {
+        for (int i=0; i<a.length; i++)
+            if (!isInteger(a[i]))
+                return false;
+        return true;
     }
 
     /** Returns the last element of a double[] array */
@@ -479,6 +500,15 @@ public class LeedUtils {
         return out;
     }
 
+    /** Reverses a float array */
+    public static void reverseArray(float[] a) {
+        for(int i = 0; i < a.length/2; i++) {
+            float tmp = a[i];
+            a[i] = a[a.length - i - 1];
+            a[a.length - i - 1] = tmp;
+        }
+    }
+
     /** Converts an array of Double objects to an array of the corresponding values */
     public static double[] doubleFromDouble(Object[] in) {
         double[] out = new double[in.length];
@@ -637,7 +667,8 @@ public class LeedUtils {
 
     /** Returns the number of digits for writing the energy in the file */
     public static int getEnergyDigits(double[] energies) {
-        int energyDigits = 0;
+        if (isInteger(energies))
+            return 0;
         double energyStep = getEnergyStep(energies);
         if (LeedUtils.isInteger(energyStep))
             return 0;

@@ -2,6 +2,7 @@ import ij.IJ;
 import ij.util.Tools;
 import ij.ImagePlus;
 import ij.process.*;
+import ij.gui.*;
 import java.util.Arrays;
 
 /**
@@ -481,6 +482,39 @@ public class LeedSpotAnalyzer {
 
     static double sqr(double x) {
         return x*x;
+    }
+
+    /** Returns two Rois with the shape of the integration area and background area,
+     *  for showing it at the corner of the 'Spot tracking' stack as an overlay.
+     *  The Roi is centered at (x, y).
+     *  For the shape, it is assumed that the distance from the relevant center
+     *  (screen center for OVAL, 0,0 spot for AZIMUTH_BLUR) is dx, dy in pixels;
+     *  at least one of these must be nonzero.
+     *  N.B. we use EllipseRois also for circles since circles (ovalRoi) have
+     *  integer coordinates and would not appear concentric in many cases.
+     */
+    public static Roi[] getShapeRois(int x, int y, double dx, double dy,
+            int shape, double radius, double azBlurRadians) {
+        Roi intRoi = new EllipseRoi(x-radius, y, x+radius, y, 1.0);
+        Roi bgRoi = null;
+        double rho = Math.sqrt(dx*dx + dy*dy);
+        double cosR = dx/rho;
+        double sinR = dy/rho;
+        switch (shape) {
+            case CIRCLE:
+                bgRoi = new EllipseRoi(x-Math.sqrt(2)*radius, y, x+Math.sqrt(2)*radius, y, 1.0);
+                break;
+            case OVAL:
+                bgRoi = new EllipseRoi(x-2*radius*sinR, y+2*radius*cosR, x+2*radius*sinR, y-2*radius*cosR, /*aspectRatio=*/0.5);
+                break;
+            case AZIMUTH_BLUR:
+                double radiusT = Math.sqrt(sqr(radius) + sqr(azBlurRadians)*(dx*dx + dy*dy));
+                double radiusTbg = Math.max(Math.sqrt(2)*radius, radiusT);
+                intRoi = new EllipseRoi(x-radiusT*sinR, y+radiusT*cosR, x+radiusT*sinR, y-radiusT*cosR, radius/radiusT);
+                bgRoi = new EllipseRoi(x-radiusTbg*sinR, y+radiusTbg*cosR, x+radiusTbg*sinR, y-radiusTbg*cosR, radius*Math.sqrt(2)/radiusTbg);
+                break;
+        }
+        return new Roi[] {intRoi, bgRoi};
     }
 
     /** Constructor for tests only: Creates an image with the response to

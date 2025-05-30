@@ -105,8 +105,8 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
     private static final String GO_LAST       = "Go to highest group";
     private static final String GO_PREV_COMMENT   = "Go to previous group with a comment";
     private static final String GO_NEXT_COMMENT  = "Go to next group with a comment";
-    private static final String GO_PREV_BAD   = "Go to previous 'bad beam agreement' ["+LeedUtils.CTRL+" ,]";
-    private static final String GO_NEXT_BAD   = "Go to next 'bad beam agreement' ["+LeedUtils.CTRL+" .]";
+    private static final String GO_PREV_BAD   = "Go to previous 'bad beam agreement' ["+LeedUtils.CTRL+" <]";
+    private static final String GO_NEXT_BAD   = "Go to next 'bad beam agreement' ["+LeedUtils.CTRL+" >]";
     private static final String GO_HIGHEST    = "Go to highest selected group";
     private static final String GO_INDEX      = "Go to beam index/beam group...";
     private static final String SELECT_ALL    = "Select all groups";
@@ -248,7 +248,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "their average (red) and the smoothed average in the selected range (black).</li>"+
             "<li>The <b>top part</b> of the plot area shows the <i>Y</i> function "+
             "(modified logarithmic derivative used in Pendry's <i>R</i> factor), "+
-            "for the averaged I(V) curve (red) and the smoothed I(V) curve (black). "+
+            "for the averaged <i>I</i>(<i>V</i>) curve (red) and the smoothed <i>I</i>(<i>V</i>) curve (black). "+
             "This is the function that is compared to the corresponding function of the calculated <i>I</i>(<i>V</i>) curves.</li>"+
             "<li>Small, colored <b>ticks</b> below the <i>Y</i> function indicate the limits of the data ranges of the individual <i>I</i>(<i>V</i>) curves. "+
             "Thicker and longer ticks indicate an excluded energy range of an input beam.</li>"+
@@ -260,21 +260,22 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "Comments are saved in the <a href='#editFile'>edit file</a>.</li>"+
             "<li><b>Save</b> saves the csv file with the final curves. Right-click to save the data without smoothing.</li>"+
             "<li>The <b>&lt;</b> and <b>&gt;</b> buttons switch to the previous/next group of symmetry-equivalent beams. "+
-            "Keyboard shortcut: '&lt;' or ',' and '&gt;' or '.'. The &lt;Page Up&gt;, &lt;Page Down&gt;, &lt;Home&gt;, "+
+            "Keyboard shortcut: '&lt;' or ',' and '&gt;' or '.' (on non-English keyboards, ',' and '.' keys work only "+
+            "if this is the main function of the key, without pressing the shift key). The &lt;Page Up&gt;, &lt;Page Down&gt;, &lt;Home&gt;, "+
             "and &lt;End&gt; keys also work. Alternatively, you can use the mouse wheel.<br>"+
             "Right-click for more navigation options: First, last, or last selected beam group. "+
             "You can also jump to the previous or next beam group with a comment, or "+
             "previous or next group with bad agreement of equivalent beams (for the latter, only selected groups and energy ranges count). "+
             "You can also enter the beam indices or group number for jumping to a group."+
             "</li>"+
-            "<li><b>Select/Deselect</b> (on/off symbol) selects whether the curves of the currently "+
+            "<li><b>Group On/Off</b> (on/off symbol) selects whether the curves of the currently "+
             "shown group of symmetry-equivalent beams should be used at all.<br>"+
             "Keyboard shortcut: SPACE bar.<br>"+
             "Right-click to select or deselect all groups. "+
-            "(Note that 'Select all groups' does not select groups where the energy span be "+
+            "(Note that 'Select all groups' does not select groups where the energy span is "+
             "less than the <a href='#energyRange'>minimum span</a>.) "+
             "The '<a href='#autoSelect'>Auto Select</a>' function available via right-clicking does not only switch groups on/off "+
-            "but also selects the energy ranges.</li>"+
+            "but also selects the energy ranges, maximizing a figure of merit that depends on the noise.</li>"+
             "<li><b>Smooth More/Less</b> selects how much the curve (or average of curves) will be smoothed. "+
             "You can modify smoothing also with the &lt;ALT&gt; key down and the mouse wheel. Press &lt;SHIFT&gt; for a faster change.<br>"+
             "Right-click to change the (default) smoothing for all deselected (switched-off) groups "+
@@ -284,30 +285,28 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "and slightly weaker smoothing for less noisy curves.<br>"+
             "The 'Set best smoothing [vs. simulated I(V)]' option asks for a file of simulated <i>I</i>(<i>V</i>) curves (<tt>THEOBEAMS.csv</tt> file). "+
             "It then tries different smoothing parameters to find the smoothing that results in the lowest <i>R</i> factor "+
-            "between smoothed experimental and simulated curves, and applies this smoothing.</li>"+
-            "<li><a name='energyRange'><b>Energy Range</b></a> (yellow rectangle): "+
+            "between smoothed experimental and simulated curves, and applies this smoothing. "+
+            "This should be done only as the very last step, after refinement of the structure and inner potential.</li>"+
+            "<li><a name='energyRange'><b>Set Energy Range</b></a> (yellow rectangle): "+
             "Use the ImageJ Rectangle tool from the main ImageJ Toolbar to select the energy range and then press this button.<br>"+
             "Keyboard shortcut: '#' or '0'.<br>"+
             "Only the left and right sides of the selection rectangle are taken into account. "+
             "When the left or right side is close to the limit of one of the input curves, "+
             "and a slight shift of the boundary would avoid the necessity to smoothly fade in or fade out of that curve, "+
             "the range snaps to this point. "+
-            "You can override the snap with a right-click on the Energy Range button and "+
+            "You can override the snap with a right-click on the 'Set Energy Range' button and "+
             "'Set energy range to current ROI (no snap)'.<br>"+
             "For a given beam group, only one energy range can be selected. In other words, you can't have a gap in the output data. "+
-            "(This restriction is required by TensErLEED, which used as a backend for "+
+            "(This restriction is required by TensErLEED, which is used as a backend for "+
             "LEED-<i>I</i>(<i>V</i>) calculations in <tt>viperleed.calc</tt>.)<br>"+
-            "When there is no selection and 'Energy Range' button is pressed, the default energy range is used. "+
-            "This is the range from the dialog window shown when opening the Curve Editor, "+
-            "uless it has been modified by 'Set energy limits' from the context menu of the 'Energy Range' button. "+
-            "The 'Energy Range' button also selects a curve if it was deselected.<br>"+
-            "At low energies, if you have symmetry-equivalent curves, exclude the lowest energies if the shapes "+
-            "of the curves for symmetry-equivalent beams differ substantially. "+
-            "(Deviations between symmetry-equivalent beams at low energies only are typically due to residual magnetic fields; "+
-            "deviations at all energies are more likely due deviations from normal incidence. "+
-            "Very large deviations may indicate that you have the wrong spot pattern file, i.e., the symmetry is wrong.)<br>"+
-            "With right-clicking the Energy Range button, one can also set the full energy range of the curve, or "+
-            "modify the default energy range or the minimum energy span (previously specified in the starting dialog), "+
+            "When there is no selection and 'Set Energy Range' button is pressed, the default energy range is used. "+
+            "This is defined by the limits from the dialog window shown when opening the Curve Editor, "+
+            "unless it has been modified by 'Set energy limits' from the context menu of the 'Set Energy Range' button. "+
+            "The 'Set Energy Range' button also selects a curve if it was deselected.<br>"+
+            "By right-clicking the 'Set Energy Range' button, one can also set the full energy range for the curve, "+
+            "or the default energy range (as given by the limits). "+
+            "You can also modify these limits (the default energy range) or the minimum energy span "+
+            "(previously specified in the starting dialog), "+
             "and optionally restrict the energy ranges of all groups to obey the new limits. "+
             "<b><a href='#autoSelect'>Automatic selection</a></b> of beam groups and energy ranges (depending on the noise) "+
             "is also available from this context menu.<br>"+
@@ -316,7 +315,11 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "If there is no sufficiently long low-noise range, deselect the whole curve. "+
             "Rule of thumb: For 0.5 eV energy steps, in the ideal case, the noise (peak\u2013peak) "+
             "should be on average less than ~20\u201330% of the full vertical range of the <i>Y</i> function. "+
-            "Select the high-energy limit such that high-energy regions with an average noise larger than this noise are excluded. "+
+            "Select the high-energy limit such that high-energy regions with an average noise larger than this noise are excluded.<br>"+
+            "If symmetry-equivalent beams differ substantially in the low-energy region, exclude these low energies. "+
+            "(Deviations between symmetry-equivalent beams at low energies only are typically due to residual magnetic fields; "+
+            "deviations at all energies are more likely due deviations from normal incidence. "+
+            "Very large deviations may indicate that you have the wrong spot pattern file, i.e., the symmetry is wrong.)<br>"+
             "</li>"+
             "<li><a name='ivEditorOptions'><b>Options</b></a> (gearwheel symbol): Use the 'Options...' dialog to change the V0i value, "+
             "use a fixed <i>x</i> axis with the full energy range for all curves, "+
@@ -327,7 +330,8 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "the Spot Tracker: This shows the current energy of the Spot Tracker as a black vertical line in the I(V) Curve Editor. "+
             "The beams of the current beam group in the I(V) Curve Editor can be highlighted in the Spot Tracker "+
             "(unless the highlighted beams of the Spot Tracker still mark the dubious beams of spot tracking; these are not modified).<br>"+
-            "The 'Options' button also lets you select the threshold for classifying '<b>bad agreement</b>' of symmetry-equivalent beams and "+
+            "By right-clicking the 'Options' button, you can select the threshold for classifying "+
+            "'<b>bad agreement</b>' of symmetry-equivalent beams and "+
             "create a list of these 'bad-agreement' beams. "+
             "A typical value for this threshold is between the threshold value for "+
             "<a href='#autoSelect'>automatic selection</a> and twice that value. "+
@@ -354,7 +358,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "<p>If you have taken more than one <i>I</i>(<i>V</i>) movie for averaging, "+
             "average their <i>I</i>(<i>V</i>) curves before using the I(V) Curve Editor.</p>"+
             "<p>When opening the (averaged) <i>I</i>(<i>V</i>) curve for the first time, "+
-            "start with <b><a name='autoSelect'>automatic selection</a></b> (also available later with right-clicking the on/off or 'set energy range' button) "+
+            "start with <b><a name='autoSelect'>automatic selection</a></b> (also available later with right-clicking the on/off or 'Set Energy Range' button) "+
             "to select the energy ranges for all curves. Automatic selection is based on an "+
             "estimate of the noise of the curve and its impact on the <i>R</i> factor. "+
             "Selection is done such that the average noise is less than the given noise limit and a figure of merit "+
@@ -374,14 +378,14 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             LeedUtils.CTRL+"-next group). The energy of the worst agreement of a given beam with the average "+
             "will be marked by a vertical line. You may move the mouse over the button for this beam to compare its "+
             "<i>Y</i> function with that of the average. Sometimes, the bad agreement is caused by a defect of the LEED screen "+
-            "(if only one out of many beams is an outlier) and a short section of the 'bad' beam can be excluded. "+
-            "(Select the 'bad' energy range and exclude it for the beam by right-clicking on its button.) "+
+            "(if only one out of many beams is an outlier) and a short section of the 'bad' beam can be excluded: "+
+            "Select the 'bad' energy range and exclude it for the beam by right-clicking on its button. "+
             "In other cases, especially if such a 'bad' region is close to the ends of the energy range, "+
             "it makes sense to set the energy range for the beam group such that the region of poor agreement is avoided. "+
             "If many groups show large disagreement of the symmetry-equivalent beams, "+
             "consider repeating the measurement with better adjustment of perpendicular incidence and/or "+
             "better compensation of residual magnetic fields.</p>"+
-            "<p>Finally, save the data. You can now use them as input for structure optimization (file EXPBEAMS.csv).</p>"+
+            "<p>Finally, save the data. You can now use them as input for structure optimization (file <tt>EXPBEAMS.csv</tt>).</p>"+
             "<p>Towards the end of a LEED <i>I</i>(<i>V</i>) study, when you have a good best-fit model from the simulation calculations, "+
             "you may want to try the 'Set best smoothing [vs. simulated I(V)]' option (right-click one of the smoothing buttons) "+
             "for the last tweak (typically with 'noise-dependent smoothing' enabled). Usually, the improvement of the <i>R</i> factor "+
@@ -403,7 +407,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "You can set a fixed energy range corresponding to this full range in the <a href='#ivEditorOptions'>Options</a>.</p>"+
             "<p>If you want a different color for the selection rectangle, you can set it in ImageJ: Edit&gt;&gt;Options&gt;&gt;Colors...</p>"+
             "<p>You can have more than one I(V) Curve Editor window at the same time, to compare different sets of <i>I</i>(<i>V</i>) curves. "+
-            "These windows get synchronized, i.e., they show the same beam group (if available) and the same energy range on the <i>x</i> axis.</p>"+
+            "These windows are synchronized, i.e., they show the same beam group (if available) and the same energy range on the <i>x</i> axis.</p>"+
             "<p>Smoothing is performed using a 4th-degree modified-sinc smoother [<a href='#msSmooth'>2</a>]. "+
             "The best smoothing parameter is typically 0.6&nbsp;V0i "+
             "(very good data or energies &lt; 50 eV) to 1.3&nbsp;V0i (noisy data). "+
@@ -659,7 +663,9 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
         }
         double minY=Double.MAX_VALUE, maxY=-Double.MAX_VALUE;
         for (int d=Y_AVG; d<N_PLOT_DATA; d++) {     //data range for Y_AVG, Y_SMOOTH
-            double[] minMax = Tools.getMinMax(processedData[d]);
+            double[] pData = processedData[d];
+            if (pData == null) continue;
+            double[] minMax = Tools.getMinMax(pData);
             if (minY > minMax[0]) minY = minMax[0];
             if (maxY < minMax[1]) maxY = minMax[1];
         }
@@ -2713,6 +2719,8 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
     void handleButtonPressed(int button, MouseEvent e) {
         if (guiBlocked()) return;
         boolean isRightClick = LeedUtils.isPopupTrigger(e);
+        int modifiers = e==null ? 0 : e.getModifiersEx();
+        boolean ctrlOrMeta = (modifiers & (InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK)) != 0;
         if (isRightClick || button == OPTIONS) {
             if (CONTEXT_MENU_ITEMS[Math.min(button, N_BUTTONS)] != null)
                 showMenu(button, getCanvas(), e);
@@ -2726,10 +2734,16 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
                     saveCurves(true);
                     break;
                 case PREV:
-                    setGroup(getPreviousGroup(), true);
+                    if (ctrlOrMeta)
+                        goBadGroup(-1);
+                    else
+                        setGroup(getPreviousGroup(), true);
                     break;
                 case NEXT:
-                    setGroup(getNextGroup(), true);
+                    if (ctrlOrMeta)
+                        goBadGroup( 1);
+                    else
+                        setGroup(getNextGroup(), true);
                     break;
                 case ON_OFF:
                     boolean useOut = useOutput[currentColumns[0]];
@@ -2837,7 +2851,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
                         str += " Current range: "+IJ.d2s(energies[currentRange[0]], E_DECIMALS)+
                                 "-"+energies[Math.max(currentRange[1]-1,0)];
                 } else
-                    str ="Set energy range "+IJ.d2s(Math.max(eMinMax[0],curveStartEv), E_DECIMALS)+
+                    str ="Set Energy Range "+IJ.d2s(Math.max(eMinMax[0],curveStartEv), E_DECIMALS)+
                             "-"+IJ.d2s(Math.min(eMinMax[1], curveEndEv), E_DECIMALS);
                 str += ". Right-click for more. Shortcut: # or 0";
                 break;

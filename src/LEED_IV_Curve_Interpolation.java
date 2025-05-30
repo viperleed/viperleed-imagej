@@ -94,7 +94,7 @@ public class LEED_IV_Curve_Interpolation implements PlugIn {
         LeedIVData ivData = LeedIVData.fromFile(filePath, null, LeedIVData.ZERO_IS_NAN);
         if (ivData == null || ivData.energies == null)
             return;
-      
+
         LeedIVData newData = LeedInterpolator.interpolate(ivData, newStep);
         
         IJ.showStatus("Saving...");

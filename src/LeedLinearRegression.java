@@ -107,6 +107,7 @@ public class LeedLinearRegression {
         double r = (sumXY - sumX*sumY*(1/counter)) / Math.sqrt(stdX2TimesN*stdY2TimesN);
         if (counter > 1e-100 && Double.isNaN(r)) r = 1; //if stddev of y = 0;
         rmsResiduals = stdY2TimesN*(1/counter)*(1 - r*r);
+        if (rmsResiduals < 0) rmsResiduals = 0;         //numerical errors could cause rmsResiduals<0
         // alternative equation: (sumY2 + slope*slope*sumX2 + offset*offset*counter - 2*slope*sumXY - 2*offset*sumY + 2*offset*slope*sumX) / counter;
         calculated = true;
 		//DEBUG IJ.log("off="+(float)offset+" sl="+(float)slope+" r2="+(float)(r*r)+" rmsR="+(float)rmsResiduals);

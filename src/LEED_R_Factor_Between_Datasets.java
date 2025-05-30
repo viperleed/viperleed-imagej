@@ -252,14 +252,17 @@ public class LEED_R_Factor_Between_Datasets implements PlugIn {
             rFactorData[ic][LeedRFactor.RATIO] *= sumRange/sumRatio;
 
         double[][] sumIntSup = new double[2][LeedRFactor.OUTPUT_SIZE];  //[0] integer, [1] superstructure
-        int[] nIntSup = new int[2];
         if (spotPattern.isSuperstructure()) {                           //create separate statistics for integer & superstructure
             for (int ic=0; ic<commonIVData[0].spotIndices.length; ic++) {
+                if (rFactorData[ic][LeedRFactor.N_OVERLAP] == 0) continue;
                 int intOrSup = spotPattern.isSuperstructure(commonIVData[0].spotIndices[ic]) ?
                         1 : 0;
-                for (int i=0; i<LeedRFactor.OUTPUT_SIZE; i++)
-                    sumIntSup[intOrSup][i] += rFactorData[ic][i];
-                nIntSup[intOrSup]++;
+                for (int i=0; i<LeedRFactor.OUTPUT_SIZE; i++) {
+                    if (i==LeedRFactor.N_OVERLAP)
+                        sumIntSup[intOrSup][i] += rFactorData[ic][i];
+                    else
+                        sumIntSup[intOrSup][i] += rFactorData[ic][i]*rFactorData[ic][LeedRFactor.N_OVERLAP]; //weighted sum
+                }
             }
         }
 
@@ -299,13 +302,14 @@ public class LEED_R_Factor_Between_Datasets implements PlugIn {
                     IJ.showProgress(0.8+0.2*ic/rFactorData.length);
             }
         }
-        if (spotPattern.isSuperstructure() && nIntSup[0]>0 && nIntSup[1]>0) {
+        if (spotPattern.isSuperstructure() && sumIntSup[0][LeedRFactor.N_OVERLAP]>0 && sumIntSup[1][LeedRFactor.N_OVERLAP]>0) {
             for (int intOrSup=0; intOrSup<2; intOrSup++) {
                 rt.incrementCounter();
                 rt.addLabel(intOrSup == 0 ? "Integer" : "Superstr.");
-                rt.addValue(LeedRFactor.R_FACTOR_NAMES[R_FACTOR_TYPE], sumIntSup[intOrSup][R_FACTOR_TYPE]/nIntSup[intOrSup]);
+                rt.addValue(LeedRFactor.R_FACTOR_NAMES[R_FACTOR_TYPE],
+                        sumIntSup[intOrSup][R_FACTOR_TYPE]/sumIntSup[intOrSup][LeedRFactor.N_OVERLAP]);
                 rt.addValue("E_Range", sumIntSup[intOrSup][LeedRFactor.N_OVERLAP]);
-                rt.addValue("Ratio2/1", sumIntSup[intOrSup][LeedRFactor.RATIO]/nIntSup[intOrSup]);
+                rt.addValue("Ratio2/1", sumIntSup[intOrSup][LeedRFactor.RATIO]/sumIntSup[intOrSup][LeedRFactor.N_OVERLAP]);
             }
         }
         if (allowShift) {
@@ -430,8 +434,8 @@ public class LEED_R_Factor_Between_Datasets implements PlugIn {
         return output;
     }
 
-    /** Finds the optimum R factor, using 3-point parabolic interpolation.
-     *  Returns as a double[][] array a list with the individual R factor data
+    /** Finds the optimum R factor, using 3-point parabolic interpolation between energy shifts.
+     *  On success, returns as a double[][] array a list with the individual R factor data
      *  for each beam group, and the total R factors.
      *  Columns of data0, data1 must correspond the same beam if the column index is the same.
      *  The output has one array as provided by LeedRFactor for each spot present in both data sets and,

@@ -29,12 +29,13 @@ import java.util.*;
 
 
 public class LeedOverlay {
-    static final String ENERGY = "energy", MASK = "mask";   //roi names (circles & beam labels have spot index as name)
-    static Font font = new Font("SansSerif", Font.PLAIN, 10);            //Font for beam labels. Size will vary
-    static Font boldFont = new Font("SansSerif", Font.BOLD, 10);         //Bold font for beam labels. Size will vary
-    static Color circleColor = new Color(0x00c0ff);;
-    static Color circleWeakColor = new Color(0x0060c0);
-    static Color labelColor = Color.GREEN; //new Color(0xff4400);
+    static final String E_ETC = "Eetc";    //roi name for energy, mask, int&bg indicator (circles & beam labels have spot index as name)
+    static final Color CIRCLE_COLOR = new Color(0x00c0ff);              //color for spot circles if there is no selection
+    static final Color CIRCLE_WEAK_COLOR = new Color(0x0060c0);         //color for deselected spot circles
+    static final Color LABEL_COLOR = Color.GREEN;                       //color for spot labels
+    static final Color INT_INDICATOR_COLOR = new Color(0x00a0a0);       //color for integration and background area indicator
+    static Font font = new Font("SansSerif", Font.PLAIN, 10);           //Font for beam labels. Size will vary
+    static Font boldFont = new Font("SansSerif", Font.BOLD, 10);        //Bold font for beam labels. Size will vary
     static HashSet<String> spotNamesHighlighted;
     static int highlightedStrength;                         //sync from CurveEditor has strength 0, manual 1, bad beams 2
 
@@ -47,26 +48,49 @@ public class LeedOverlay {
         ovly.add(roi, name);
     }
 
-    /** Adds a 'mask' overlay visible in all slices.
-     *  All other Rois with this name are removed.
+    /** Adds the mask outline, energy (or xAxis) labels,
+     *  and integration area indicator in the corner.
+     *  Note that xAxis[0] corresponds to the first stack slice 1.
+     *  For regular LEED I(V), isEnergy should be true; then the integration
+     *  area depends on the energy.
      *  Does not update the display; use imp.draw() to show the overlay. */
-    public static void addMask(ImagePlus imp, Roi roi) {
-        add(imp, roi, MASK);
-    }
-
-    /** Adds energy labels. Note that energies[0] corresponds to the first stack slice 1.
-     *  Does not update the display; use imp.draw() to show the overlay. */
-    public static void add(ImagePlus imp, double[] energies) {
-        if (imp == null || energies == null) return;
+    public static void add(ImagePlus imp, double[] xAxis, boolean isEnergy, Roi maskRoi) {
+        if (imp == null) return;
         Overlay ovly = getOverlay(imp);
-        removeOverlay(ovly, ENERGY);
-        int fontSize = 10+imp.getHeight()/100;
+        removeOverlay(ovly, E_ETC);
+        if (maskRoi != null)
+            add(imp, maskRoi, E_ETC);
+
+        int width = imp.getWidth();
+        int height = imp.getHeight();
+        int fontSize = 10+height/100;               //for drawing energy labels
         final Font font = new Font("Arial", Font.PLAIN, fontSize);
+        int digits = LeedUtils.getEnergyDigits(xAxis);
+        int xIntIndicator = (int)Math.round(width - 0.08*Math.min(width, height)); //where to draw integration&bg indicator
+        int yIntIndicator = (int)Math.round(0.08*Math.min(width, height));
+        double dx = 0.25*Math.min(width, height);   //for drawing integration&bg indicator, we assume spot halfway from the center
+        double dy = -dx;
+        int backgroundType = (int)LeedParams.get(LeedParams.BACKGROUNDTYPE);
+        double azBlurRadians = Math.toRadians(LeedParams.get(LeedParams.AZIMUTHBLURANGLE));
+        
         for (int i=0; i<imp.getNSlices(); i++) {
-            Roi roi = new TextRoi(fontSize/2, fontSize/2, IJ.d2s(energies[i], 1), font);
-            roi.setStrokeColor(Color.YELLOW);
-            roi.setPosition(i+1);
-            ovly.add(roi, ENERGY);
+            if (Thread.currentThread().isInterrupted()) return;
+            if (xAxis != null) {
+                Roi roi = new TextRoi(fontSize/2, fontSize/2, IJ.d2s(xAxis[i], digits), font);
+                roi.setStrokeColor(Color.YELLOW);
+                roi.setPosition(i+1);
+                ovly.add(roi, E_ETC);
+            }
+            double energy = isEnergy && xAxis != null ?
+                    xAxis[i] : LeedRadiusSelector.UNKNOWN_ENERGY;
+            Roi[] rois = LeedSpotAnalyzer.getShapeRois(xIntIndicator, yIntIndicator, dx, dy,
+                    backgroundType, LeedRadiusSelector.radius(energy, /*isSuperstructure=*/false), azBlurRadians);
+            rois[0].setStrokeColor(INT_INDICATOR_COLOR);
+            rois[1].setStrokeColor(INT_INDICATOR_COLOR);
+            rois[0].setPosition(i+1);
+            rois[1].setPosition(i+1);
+            ovly.add(rois[0], E_ETC);
+            ovly.add(rois[1], E_ETC);
         }
     }
 
@@ -89,7 +113,7 @@ public class LeedOverlay {
         //int y0 = (int)Math.round(y-0.5*diam);
         Roi roi = new OvalRoi(x-radius+0.5, y-radius+0.5, 2*radius, 2*radius); //circle around pixel (0,0) has to left x=y=0
         roi.setPosition(slice);
-        roi.setStrokeColor(circleColor);
+        roi.setStrokeColor(CIRCLE_COLOR);
         ovly.add(roi, name);
         if (name != null)
             addName(imp, slice, x, y, radius, name, /*bold=*/false);
@@ -104,7 +128,7 @@ public class LeedOverlay {
         int y0 = (int)(y + radius - (twoLine ? font.getSize2D() : 0.2f*font.getSize2D()));
         Roi roi = new TextRoi(name, (int)(x-radius), y0, bold ? boldFont : font);
         roi.setPosition(slice);
-        roi.setStrokeColor(labelColor);
+        roi.setStrokeColor(LABEL_COLOR);
         ovly.add(roi, name);
     }
 
@@ -143,11 +167,11 @@ public class LeedOverlay {
             Roi roi = iterator.next();
             if (roi instanceof OvalRoi) {
                 if (spotNamesToHighlight != null && spotNamesToHighlight.contains(roi.getName())) {
-                        roi.setStrokeColor(circleColor);
+                        roi.setStrokeColor(CIRCLE_COLOR);
                         roi.setStrokeWidth(roi.getFloatWidth() > 4 ? 2f : 1f);
                 } else {  
                     roi.setStrokeWidth(0f);             // unhighlight previously highlighted
-                    roi.setStrokeColor(spotNamesToHighlight == null ? circleColor : circleWeakColor);
+                    roi.setStrokeColor(spotNamesToHighlight == null ? CIRCLE_COLOR : CIRCLE_WEAK_COLOR);
                 }
             }
         }
@@ -194,14 +218,14 @@ public class LeedOverlay {
     }
 
     /** Remove overlay Rois for beams with a given class.
-     *  Energy labels are not affected
+     *  Energy labels, mask and integration indicators are not affected
      *  Synchronized to avoid two concurrent 'remove' operations */
     static synchronized void removeOverlay(Overlay ovly, Class roiClass) {
         spotNamesHighlighted = null;
         if (ovly == null) return;
         for (int i=ovly.size()-1; i>=0; i--) {
             Roi roi = ovly.get(i);
-            if ((roi.getClass().equals(roiClass) && (roiClass == OvalRoi.class || roi.getName() != ENERGY)))
+            if ((roi.getClass().equals(roiClass) && (roiClass == OvalRoi.class || roi.getName() != E_ETC)))
                 ovly.remove(i);
         }
     }

@@ -87,7 +87,7 @@ public class LEED_IV_Curve_Tools implements PlugIn, DialogListener {
             "You can select the new indices of the (1,0) and (0,1) spots. "+
             "You can use this function, e.g., to swap the <i>h</i> and <i>k</i> indices: Change (1,0) to (0,1) and (0,1) to (1,0). "+
             "Swapping <i>h</i> and <i>k</i> is often needed for crystals with threefold symmetry, where (1,0) and (0,1) are not equivalent, "+
-            "but is is initially not known which is which.<br>"+
+            "but it is initially not known which is which.<br>"+
             "If the spot labels have included group numbers in square brackets (to indicate the symmetry-equivalent beams, "+
             "see below), these group numbers will be deleted."+
             "</li>"+
