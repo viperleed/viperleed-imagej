@@ -39,14 +39,14 @@ public class LeedSpotTrackerHelp {
             "<dt>Dark Frame and Flat Field (optional)</dt><dd>";
     private static final String HELP_DARKFLATEXPLAIN =
             "These images should be used to correct for the dark current of the camera (and background illumination, if any) "+
-            "as well as inhomogeneities of the LEED screen, optics and camera. The <em>flat field</em> is an image "+
+            "as well as inhomogeneities of the LEED screen, optics, and camera. The <em>flat field</em> is an image "+
             "(or image stack) of a diffuse diffraction pattern with no spots, only showing the inhomogeneities "+
             "of the optics and camera. The flat field is typically recorded by moving a polycrystalline "+
             "sample holder to the sample position; make sure that the distance from the electron source "+
             "is exactly the same as that of the sample surface. (Since the intensity is spread out over all the screen, "+
             "you may use a higher beam current or longer exposure than for the LEED movie of the sample.) "+
             "A flat field is especially important if the LEED image has a high "+
-            "background intensity, e.g. for sample temperatures around or above the Debye temperature of the sample. "+
+            "background intensity, e.g., for sample temperatures around or above the Debye temperature of the sample. "+
             "<em>Dark frame</em> images (when present) are subtracted from the input stack and flat field before "+
             "the flat-field correction. The dark frame is best measured with a high negative Wehnelt voltage, "+
             "suppressing the beam, but keeping light emitted by the filament as well as any glow due to (field-emitted) "+
@@ -72,7 +72,7 @@ public class LeedSpotTrackerHelp {
             "The type of dark & amp;flat processing is displayed in abbreviated form next to the "+
             "<a href='#darkFlatProcessing'>Dark &amp; Flat Processing</a> button. "+
             "Some sort of averaging (to reduce the noise) is advisable, especially for the flat field.<br>&nbsp;&nbsp;&nbsp;&nbsp;"+
-            "Note that image processing with dark &amp; flat requires a <em>mask</em> (see below). "+
+            "Note that image processing with dark and flat requires a <em>mask</em> (see below). "+
             "The mask defines the area where the correction will be performed. "+
             "Without a proper mask, the correction will result in arbitrary values outside the LEED screen; "+
             "this will prevent proper setting of brightness &amp; contrast and may make the LEED screen appear black or dull.";
@@ -80,18 +80,19 @@ public class LeedSpotTrackerHelp {
             "</dd><dt>Mask (required)</dt><dd>An 8-bit image (&quot;binary image&quot;) with white pixels "+
             "for the background and black for the foreground. The foreground area determines the screen area "+
             "where intensities may be measured. The mask image must NOT contain pixel values other than 0 or 255. "+
-            "You can use Analyze&gt;Histogram to see which pixel values are present in an image; "+
-            "in the histogram panel click on &quot;Log&quot; (=logarithmic) to see also values that occur "+
-            "for a few pixels only. You can use Image&gt;Adjust&gt;Threshold (and &quot;Apply&quot;) "+
+            "You can use <i>Analyze&gt;Histogram</i> to see which pixel values are present in an image; "+
+            "in the histogram panel click on &quot;Log&quot; (logarithmic <i>y</i> axis scale) to see also values that occur "+
+            "for a few pixels only. You can use <i>Image&gt;Adjust&gt;Threshold</i> (and &quot;Apply&quot;) "+
             "to ensure that all pixel values are 0 or 255. Images with in-between values cannot be selected as a mask.<br>&nbsp;&nbsp;&nbsp;&nbsp;"+
             "You have to create the Mask image; start with <a href='#createMask'>More&gt;&gt;Create Mask</a>. "+
             "As soon as a mask has been selected, it is shown as an outline on the image stack used for spot tracking. "+
             "Editing of the mask image will be reflected by the outline almost immediately.</dd>"+
             "</dl>"+
-            "<p>All these images or image stacks must be open in ImageJ; you can use More&gt;&gt;Open Images/Movies... "+
+            "<p>All these images or image stacks must be open in ImageJ; you can use <a href='#openImagesMovies'>More&gt;&gt;Open Images/Movies...</a> "+
             " to open them (and select them as the input, if appropriate). Alternatively, you can use the "+
-            "Plugins&gt;ViPErLEED&gt;Open LEED Movie... command (which can also create a table of metadata when opening a movie) "+
-            "or the various ImageJ File&gt;Open and File&gt;Import commands (e.g. File&gt;Import&gt;Image Sequence...) "+
+            "<i>Plugins&gt;ViPErLEED&gt;Open LEED Movie...</i> command (which can also create a table of metadata when opening a movie) "+
+            "or the various ImageJ <i>File&gt;Open</i> and <i>File&gt;Import</i> commands "+
+            "(e.g. <i>File&gt;Import&gt;Image Sequence...</i>) "+
             "for combining multiple images into an image stack (i.e., a movie). "+
             "Image stacks may be in memory or (if the open/import command allows) they can be <em>virtual stacks</em>, "+
             "i.e., the active image is read from disk as required, but not always kept in memory (needs less RAM).<br>&nbsp;&nbsp;&nbsp;&nbsp;"+
@@ -110,9 +111,9 @@ public class LeedSpotTrackerHelp {
             "- Smoothing: Select this option for averaging over a few energies (usually used for the flat field). "+
             "The <i>Smooth amount</i> determines the noise suppression. "+
             "(For a smooth amount of <i>n</i>, the noise suppression is roughly equivalent to that of averaging over <i>n</i> "+
-            "points, but the algorithm is actually different from moving averages, with better suppression "+
+            "stack slices, but the algorithm is actually different from moving averages, with better suppression "+
             "of rapid fluctuations and less memory use.)</p>"+
-            "<p><i>Flat field processing</i>: Before applying the flat field "+
+            "<p><i>Flat field processing type</i>: Before applying the flat field "+
             "(and after subtraction of its dark frame, if provided) to the main image, "+
             "in most cases further processing of the flat field should be applied: "+
             "If the flat field is a stack with 1:1 correspondence to the input "+
@@ -152,14 +153,14 @@ public class LeedSpotTrackerHelp {
             "either using the individual values for each energy or a linear fit "+
             "(if the dark frames are a stack with 1:1 correspondence to the main input stack). "+
             "I00 may be read from the dark frame(s) only if they were obtained without emitted electron current "+
-            "(not by setting the screen voltage to 0). "+
+            "(i.e., by setting the Wehnelt voltage to a highly negative value, not by setting the screen voltage to 0). "+
             "If I00 is provided, the actual beam current is calculated as <tt>I0 - I00</tt>. "+
             "Usually, the beam current should be smoothed; the amount of smoothing can be entered (0 for no smoothing). "+
             "The amount of smoothing is given as the number of points in a moving-averages filter "+
             "with the same noise suppression; actually a modified sinc kernel [<a href= '#msSmooth'>2</a>] is used. "+
             "I0, I00, and the smoothed and I00-corrected beam current are plotted after closing this input window "+
             "if 'Plot I0' is selected. The plot does not include corrections based on the background intensity "+
-            "measured during spot tracking (after spot tracking, you can use 'More&gt;&gt;Plot...' for this).</p>"+
+            "measured during spot tracking (after spot tracking, you can use <a href='#morePlot'>More&gt;&gt;Plot...</a> for this).</p>"+
             "<p>This input window also has an option to set LEEM mode. In LEEM mode, it is assumed that "+
             "the spots do not move with energy as they would in normal LEED experiments.</p>"+
             "<p>For experiments with constant electron energy, such as studies of phase transitions "+
@@ -183,17 +184,17 @@ public class LeedSpotTrackerHelp {
             "<p>Firstly, an input window appears and asks you to select a stack slice "+
             "[an energy in usual <i>I</i>(<i>V</i>) measurements] where as many spots as possible are clearly visible, "+
             "including spots near the edge of the screen. Use the slider below the '<tt>..._SpotTracking</tt>' image stack "+
-            "to select the energy (You cannot use one of the image stacks supplied as the input for energy selection, "+
-            "unless it is coupled with the '<tt>..._SpotTracking</tt>' stack via Analyze&gt;Tools&gt;Synchronize Windows). "+
+            "to select the energy (For energy selection, you cannot use one of the image stacks supplied as the input, "+
+            "unless it is coupled with the '<tt>..._SpotTracking</tt>' stack via <i>Analyze&gt;Tools&gt;Synchronize Windows</i>). "+
             "You may use the <tt>Auto</tt> button of the "+
-            "Image&gt;Adjust&gt;Brightness&amp;Contrast panel (B&amp;C; keyboard shortcut "+LeedUtils.CTRL+"-SHIFT-C when the stack "+
+            "<i>Image&gt;Adjust&gt;Brightness&amp;Contrast panel</i> (B&amp;C; keyboard shortcut "+LeedUtils.CTRL+"-SHIFT-C when the stack "+
             "is in the foreground) or the sliders of the B&amp;C "+
             "panel to adjust the contrast. If many spots are not recognized (not marked by "+
             "a circle), or many circles do not mark diffraction maxima, you can adjust the noise rejection. "+
             "Note that also an improper value of the <a href='#setRadius'>integration radius</a> may prevent recognition of the spots. "+
             "Having a few 'false' spots marked does not hurt as long as these are not close to the position where "+
             "a diffraction maximum would be expected.</p>"+
-            "<p>When spot indices have been defined previously and fit the the maxima, the maxima will be labeled "+
+            "<p>When spot indices have been defined previously and fit the maxima, the maxima will be labeled "+
             "and you can click 'Labels are OK' if the identification is correct. Otherwise, you have to manually name "+
             "one or a few spots in the next step.</p>";
     private static final String HELP_SETINDICES2 =
@@ -210,7 +211,7 @@ public class LeedSpotTrackerHelp {
             "In case of a mistake, you can click on a spot and rename it. As soon as the program has tried to identify "+
             "the spot pattern, the input window also shows the polynomial order it uses to convert reciprocal-space "+
             "coordinates to pixel coordinates and the root-mean-square (rms) deviation of the spots from the fit "+
-            "in pixels. For small images (e.g. 512 x 512 pixels), the rms deviation should not be much more than about "+
+            "in pixels. For small images (e.g., 512 x 512 pixels), the rms deviation should not be much more than about "+
             "two pixels; otherwise carefully check whether the assignment is correct (especially if spots are dense "+
             "in some places, but with larger gaps in between, as it happens for some superstructure cells). "+
             "Especially in case of distorted images, one can also "+
@@ -234,7 +235,7 @@ public class LeedSpotTrackerHelp {
             "due to inelastic scattering is very low and flat, and (iii) all spots are bright. "+
             "Even in case of very close spots and high noise, the radius values should not be less than ~2 times "+
             "the typical spot radii. This means that the line in the "+
-            "<a href='#spotRadii'>spot radii plot</a> should still be above the center of the point cloud). "+
+            "<a href='#spotRadii'>spot radii plot</a> should still be above the center of the point cloud. "+
             "Usually it is a good idea to try spot tracking with different radii and compare the "+
             "<a href='#qualityPlot'><i>I</i>(<i>V</i>) quality plots</a> to find out which value works best. "+
             "Keep in mind that the radii must be chosen such that the background area of each spot "+
@@ -270,7 +271,9 @@ public class LeedSpotTrackerHelp {
             "(This is the opposite to the oval background, where the background is evaluated in tangential direction from the spot.)</p>"+
             "<p>For both <em>Oval background</em> and <em>Azimuth blur</em>, note that there is no thorough checking "+
             "for whether the background area of a spot overlaps with the integration disk of any of its neighbors. "+
-            "Thus, use these modes only if the spots are well-separated up to the highest energy. </p>";
+            "Thus, use these modes only if the spots are well-separated up to the highest energy.</p>"+
+            "<p>The type and size of the integration and background areas are indicated at the top right of the SpotTracking stack. "+
+            "(Not updated while the dialog is open.)</p>";
     private static final String HELP_TRACKSPOTS1 =
             "<h2><a name='trackSpots'>Track Spots</a></h2>"+
             "<p>Starts spot tracking and intensity measurements (may take up to a minute). "+
@@ -312,7 +315,7 @@ public class LeedSpotTrackerHelp {
             "Then, for spots that are below the noise threshold at all energies, the positions "+
             "are inferred from the neighboring stronger spots. This is useful, e.g., for checking whether minority areas with a "+
             "given superstructure are present. "+
-            "In this case, check the positions and make sure you don't mistake small background variations for a real signal!</dd>"+
+            "In this case, check the positions and make sure you don't mistake small background variations for a real signal.</dd>"+
             "<dt>Subtract background of bright neighbor spots:</dt><dd>Since spots often have a long-range background "+
             "(tails of the spot profile), the background for nearby spots is not uniform. "+
             "Use this option only if the spots show circular symmetry, not for elongated spots. "+
@@ -336,7 +339,7 @@ public class LeedSpotTrackerHelp {
             "i.e., when zero light corresponds to a pixel value of zero. "+
             "The ViPErLEED hardware measures I0 with very low noise; for such data it may be better to disable I0 smoothing "+
             "in case of I0 jumps instead of using this option. "+
-            "To examine whether this option works well, plot the processed I0 vs. (raw) I0 with 'More&gt;&gt;Plot...' "+
+            "To examine whether this option works well, plot the processed I0 vs. (raw) I0 with <a href='#morePlot'>More&gt;&gt;Plot...</a> "+
             "after spot tracking and check whether the processed I0 is less noisy than the raw I0. "+
             "You can also plot the background intensity divided by the (unsmoothed, but I00-corrected) I0. "+
             "Use the &quot;Apply fast background changes to I0&quot; option only if background/I0 "+
@@ -370,7 +373,8 @@ public class LeedSpotTrackerHelp {
             "<dl><dt><a name='selectedCurves'>Selected I(V) Curves</a></dt><dd>If there are symmetry-equivalent beams, "+
             "a plot of one set of such beams. "+
             "This is mainly for judging the alignment and residual electric and magnetic fields. "+
-            " (The selection criteria for this set of curves are a large common energy range and high intensity.)</dd>"+
+            " (The selection criteria for this set of curves are a large common energy range, "+
+            "a large number of equivalent beams, and high intensity.)</dd>"+
             "<dt>I(V) curves</dt><dd>The stack of all <i>I</i>(<i>V</i>) curves extracted. Note that the beam groups are in square "+
             "brackets; <i>I</i>(<i>V</i>) curves belonging to the same group should agree (symmetry-equivalent beams). "+
             "Negative group numbers denote symmetry-forbidden beams; these may have a finite (true or apparent) intensity, e.g., "+
@@ -393,26 +397,29 @@ public class LeedSpotTrackerHelp {
             "Here, 'radial' refers to the direction to the screen center, except for 'azimuth blur' mode, where "+
             "the radial direction is defined as the direction to the (0,0) spot. "+
             "The spot size plotted is an approximation to the standard deviation &sigma; of a Gaussian peak. "+
-            "Since the peaks are usually not Gaussians the sizes depend somewhat on the integration radius. "+
+            "Since the peaks are usually not Gaussians, the sizes depend somewhat on the integration radius. "+
             "The plot also shows a line with half the integration radius; it should trace the center of the point cloud "+
             "or be at larger radius values than the center line of the cloud. Ignore the outliers, "+
             "these are usually very weak spots. In &quot;azimuth blur&quot; mode, "+
-            "the tangential size of the spots is scaled down, as if the integration ellipse "+
-            "together with the image were compressed into a circle. Nevertheless, in &quot;azimuth blur&quot; mode, this criterion "+
-            "is mainly relevant for the size &sigma; in radial direction. It is less important in azimuthal direction "+
+            "the tangential size of the spots is scaled down, as if the image was distorted to make the integration ellipses circular. "+
+            "Nevertheless, in &quot;azimuth blur&quot; mode, this criterion "+
+            "is mainly relevant for the size &sigma; in the radial direction. It is less important in the azimuthal direction "+
             "because the background area does not extend from the ellipse in azimuthal direction. "+
             "See <a href='#setRadius'>Set Integration Radius</a>.</dd>"+
             "<dt><a name='qualityPlot'>I(V) Quality Statistics</a></dt><dd>This plot shows the <i>R</i> factors between symmetry-equivalent "+
-            "beams in two ways: (1) A scatter plot, where the horizontal axis is the average intensity of the <i>I</i>(<i>V</i>) curve "+
+            "beams in various ways:<br>"+
+            "(1) A scatter plot, where the horizontal axis is the average intensity of the <i>I</i>(<i>V</i>) curve "+
             "or section of that curve (normalized to 1000 for the highest intensity occurring anywhere). "+
             "Typically, due to noise, weak beams have higher <i>R</i> factors between symmetry-equivalent beams, "+
             "i.e., the point cloud is &quot;higher&quot; on the left side of the plot. "+
-            "(2) A line that shows the <i>R</i> factor against the cumulative energy range of all curve section pairs "+
+            "If the experiment was done very well (no residual magnetic fields, sample surface exactly normal to the electron beam), "+
+            "the points for the highest intensities will have mutual <i>R</i> values of less than 0.1.<br>"+
+            "(2) A line that shows the <i>R</i> factor against the cumulative energy range of all curve-section pairs "+
             "with an <i>R</i> factor better than the given number. (If there are many symmetry-equivalent beams, this is more than "+
             "the energy range available up to that <i>R</i> factor because many pairs can be selected from one group of beams.) "+
-            "Beams where no symmetry-equivalent curves are available are ignored. "+
-            "Furthermore, if there are beams with negative intensities (after smoothing), "+
-            "there is a 3rd data set with red triangles (3): "+
+            "Beams where no symmetry-equivalent curves are available are ignored.<br>"+
+            "(3) If there are beams with negative intensities (after smoothing), "+
+            "the plot shows red triangles: "+
             "For these points, the <i>x</i> axis gives the absolute value of the most negative intensity, "+
             "and the <i>y</i> axis gives the total energy range (per beam) where the intensity is negative. "+
             "Thus, the red symbols, if any, should be as far to the bottom left as possible.</dd>"+
@@ -422,7 +429,7 @@ public class LeedSpotTrackerHelp {
             "An energy dependence of the (0,0) position can be caused by, e.g., residual (magnetic) fields "+
             "or an off-axis position of the filament in the electron source. "+
             "The text and arrow at the top right indicate the displacement of the (0,0) spot at 100&nbsp;eV vs. "+
-            "the extrapolated position at infinite energies (where the electron beam does not get deflected). "+
+            "the extrapolated position at infinite energies (where the electron beam is not deflected). "+
             "This calculation assumes magnetic fields, which yield a deflection proportional to 1/&radic;<i>E</i>. "+
             "The direction of the arrow marks the direction of the movement of the (0,0) spot in the "+
             "'SpotTracking' movie with decreasing energy. (This is valid unless the plot window is resized, "+
@@ -433,13 +440,13 @@ public class LeedSpotTrackerHelp {
             "There is also a fit line for the scale factor, which assumes that deviations are due to such work function differences. "+
             "For conventional LEED optics without additional electric fields, "+
             "large scale deviations (more than ~2&ndash;3% at 50&nbsp;eV) "+
-            "may indicate surface charging. (The deviation from the scale factor is usually much larger for MCP-LEED, "+
-            "where fringe-field electrodes are present.)</dd></dl>";
+            "may indicate surface charging. The deviation of the scale factor is usually much larger for MCP-LEED, "+
+            "where fringe-field electrodes are present.</dd></dl>";
     private static final String HELP_SAVEDATA =
             "<h2><a name='saveData'>Save Data</a></h2>"+
             "<p>Saves the results as csv files in a directory chosen by the user. </p>"+
             "<p>The user can choose a prefix (all file names start with this) and also select whether to "+
-            "save plots (as created by 'Track Spots') and the processed image stack (usually a big file!).</p>"+
+            "save plots (as created by 'Track Spots') and the processed image stack (usually a big file).</p>"+
             "<p>Files created:</p>"+
             "<ul>"+
             "<li>The main outcome: The intensities, corrected for the (processed) beam current I0, file <tt>&lt;prefix&gt;_IVcurves.csv</tt>. "+
@@ -447,27 +454,27 @@ public class LeedSpotTrackerHelp {
             "comparison with the calculated ones.</li>"+
             "<li>The uncorrected intensities (not taking I0 into account) are written into <tt>_rawInt.csv</tt>. "+
             "For all beams tracked also the following information is "+
-            "written as csv files: The <i>x</i> &amp; <i>y</i> positions (in pixels) as well as the raw "+
+            "written as csv files: The <i>x</i> and <i>y</i> positions (in pixels) as well as the raw "+
             "and smoothed deviations of the positions from the expected ones "+
             "(<tt>_x</tt>, <tt>_y</tt>, <tt>_dx_raw</tt>, <tt>_dy_raw</tt>, <tt>_dx_smooth</tt>, <tt>_dy_smooth</tt>), "+
             "the significance (set to ~0 when it is below the noise threshold; file <tt>_signif</tt>), "+
             "the spot radii in radial and tangential direction (<tt>_rSize</tt>, <tt>_tSize</tt>; "+
             "see <a href='#spotRadii'>Spot Radii</a>), "+
-            "as well as the intensity in the background around the circle and its standard deviation "+
+            "as well as the intensity in the background region around the integration area and its standard deviation "+
             "(<tt>_backgr</tt>, <tt>_bsigma</tt>).</li>"+
             "<li>A <tt>.log</tt> file, which contains the parameters used for spot tracking.</li>"+
             "<li>If 'Save Plots' is selected, one file for each of the plots mentioned "+
             "in the <a href='#trackSpots'>'Track Spots' help</a> is saved.</li>"+
             "<li>If 'Save Stack' is selected, the 'spotTracking' image stack is saved, i.e., the input with dark/flat "+
-            "corrections applied and labeled integration circles (a large file!). "+
-            "Otherwise, one image with beam index designations (<tt>spotIndicesImage.tif.zip</tt>) is saved "+
+            "corrections applied and labeled integration circles (a large file). "+
+            "Otherwise, one image with beam-index designations (<tt>spotIndicesImage.tif.zip</tt>) is saved "+
             "(at the energy of <a href='#setIndices'>Set Indices</a>). "+
             "The image or stack is saved in .tif.zip format. It should be opened in ImageJ without prior unpacking.</li>"+
             "</ul>";
     private static final String HELP_MOREMENU =
             "<h2>More&gt;&gt; Popup Menu</h2>"+
             "<dl>"+
-            "<dt>Open Images/Movies...</dt><dd>Displays a dialog for opening the input files. Files selected as "+
+            "<dt><a name='openImagesMovies'>Open Images/Movies...</a></dt><dd>Displays a dialog for opening the input files. Files selected as "+
             "input that do not fit the requirements (e.g., wrong size, or a mask that is not a binary image) "+
             "will be opened, but not selected as the respective input. "+
             "Opening all files using this command is usually more convenient than opening and selecting them individually. "+
@@ -479,19 +486,19 @@ public class LeedSpotTrackerHelp {
             "<dt><a name='createMask'>Create mask...</a></dt><dd>Facilitates creating a mask for a stack of LEED images. "+
             "If a flat field is available, the tool is based on the flat field as an input (averaging over the stack slices); "+
             "otherwise it uses the main input stack (the standard deviation of the intensity vs. energy for each pixel). "+
-            "There are two sliders: Initially move the threshold slider to obtain a smooth outline of the screen area "+
-            "and the edge of the electron source (with the arm holding it). "+
+            "There are two sliders: Initially, move the threshold slider to obtain a smooth outline of the screen area "+
+            "and of the edge of the electron source (with the arm holding it). "+
             "In the second step, you may shrink or grow that area by a few pixels to refine it. "+
-            "In addition, if the program could guess the outline of the LEED screen, you can select "+
-            "&quot;Limit to elliptical fit&quot; and you can try to correct for the "+
+            "In addition, if the program can guess the outline of the LEED screen, you can select "+
+            "&quot;Limit to elliptical fit&quot; and you can try the checkbox to correct for the "+
             "radius dependence of the intensity, which is typically present in the input images. "+
-            "To evaluate the result, you may use Image&gt;Adjust&gt;Brightness&amp;Contrast "+
+            "To evaluate the result, you may use <i>Image&gt;Adjust&gt;Brightness&amp;Contrast</i> "+
             "to better see the border of the LEED image in the &quot;SpotTracking&quot; stack. "+
-            "When done, select the mask created in the man Spot Tracker panel. "+
+            "When done, select the mask created in the main Spot Tracker panel. "+
             "If required, use the standard "+
             "<a href='https://imagej.net/ij/docs/guide/146-19.html'>ImageJ selection tools</a> "+
             "(oval, polygon, freehand) "+
-            "and the Edit&gt;Fill, Clear and Clear Outside commands to further refine the mask.</dd>"+
+            "and the <i>Edit&gt;Fill</i>, <i>Clear</i> and <i>Clear Outside</i> commands to further refine the mask.</dd>"+
             "<dt>Highlight beams...</dt><dd>Shows the selected beam(s) with a thicker circle. Useful in case "+
             "of complex superstructures and to delete these from the output (see &quot;Delete highlighted beams...&quot;, below).</dd>"+
             "<dt><a name='deleteHighlighted'>Delete highlighted beams...</a></dt><dd>Deletes these beams completely or in a given energy range. "+
@@ -503,7 +510,7 @@ public class LeedSpotTrackerHelp {
             "Beam group, number of data points, energy of the first and last data point, "+
             "highest significance, and the energy where the highest significance is achieved. "+
             "There is also a summary line with the total numbers and overall minima/maxima.</dd>"+
-            "<dt>Plot...</dt><dd>Creates a plot of various data available. Examples include (processed) I0 or "+
+            "<dt><a name='morePlot'>Plot...</a></dt><dd>Creates a plot of various data available. Examples include (processed) I0 or "+
             "data for the beam(s) requested, such as intensity. See the list of .csv files in "+
             "<a href='#saveData'>Save Data</a> for the items available.</dd>"+
             "<dt>Close plots...</dt><dd>Closes all or a given subset of plots created by 'Track Spots'.</dd>"+
@@ -521,21 +528,25 @@ public class LeedSpotTrackerHelp {
             "overall deviations caused by residual fields are taken into account. "+
             "The output can be normalized, by dividing by the processed I0 (if available), to eliminate "+
             "brightness variations due to changes of the incident electron beam current. "+
-            "The output of stack undistortion is a virtual stack with caching. Thus, the images are created only "+
-            "when needed. This means that the output is quickly visible, but some image operations "+
-            "using the undistorted output will be initially slow, until all slices of that stack have been created. "+
-            "Note that averaging over the slices of an undistorted stack (Image&gt;Stacks&gt;Z Project) "+
+            "The output of stack undistortion is a virtual stack with caching. "+
+            "Thus, the images are created only when needed. This means that the output is quickly visible, "+
+            "but some image operations using the undistorted output will be initially slow, "+
+            "until all slices of that stack have been created. "+
+            "This also means that the stack created may become partly or fully unavailable "+
+            "when one of the input images/stacks is closed. "+
+            "Note that averaging over the slices of an undistorted stack "+
+            "(<i>Image&gt;Stacks&gt;Z Project...</i>) "+
             "requires ImageJ version 1.54j or later. "+
-            "Further processing of the undistorted stack (e.g. background subtraction, resizing) "+
-            "requires that you duplicate the output stack.</dd>"+
+            "Further processing of the undistorted stack (e.g., background subtraction, resizing) "+
+            "requires that you duplicate this stack.</dd>"+
             "<dt>List parameters</dt><dd>Creates a table with all numeric parameters; mainly for debugging. "+
-            "When in macro-recording mode (Plugins&gt;Macros&gt;Record...), "+
+            "When in macro-recording mode (<i>Plugins&gt;Macros&gt;Record...</i>), "+
             "also writes the macro commands for setting all parameter values to the Recorder window.</dd>"+
             "<dt>Read parameters from log file...</dt><dd>Reads all parameters from a user-selectable file, usually "+
-            "a <tt>_log.txt</tt> file saved in a previous spot tracking session. (Experts might also modify the "+
+            "a <tt>_log.txt</tt> file saved in a previous spot-tracking session. (Experts might also modify the "+
             "machine-readable part of such a log file to create a setup file; better use a macro for this.)</dd>"+
             "<dt>Compare parameters with log file...</dt><dd>Reads all numeric parameters from a user-selectable file, "+
-            "usually a <tt>_log.txt</tt> file saved in a previous spot tracking session, and compares it with "+
+            "usually a <tt>_log.txt</tt> file saved in a previous spot-tracking session, and compares it with "+
             "the parameters of the current session (shows a table of differences).</dd>"+
             "<dt>Metadata keywords...</dt><dd>Defines the names (case-sensitive) of data columns for energy, "+
             "I0, ... in the input files.  Separate multiple possibilities with a vertical bar. The keywords should be the full prefix, "+
@@ -550,32 +561,34 @@ public class LeedSpotTrackerHelp {
             "required next.</p>"+
             "<p>The <tt>Enter</tt> key brings the main ImageJ panel to the foreground. When the Spot Tracker panel is "+
             "in the foreground, <tt>SHIFT-Enter</tt> brings the 'SpotTracking' image stack to the foreground.</p>"+
-            "<p>In ImageJ, <i>slices</i> are the single images that an <i>image stack</i> (e.g. a movie) consists of. "+
+            "<p>In ImageJ, <i>slices</i> are the single images that an <i>image stack</i> (e.g., a movie) consists of. "+
             "Keyboard shortcuts for moving to the previous/next slice are ',' or '&lt;', and '.' or '&gt;', respectively. "+
             "You can also use the mouse wheel. "+
             "Right-click on the animation (play) symbol at the bottom left to change the speed of playing a movie "+
             "(it may be slower than the speed in frames per second, fps, if calculating the frames takes time).</p>"+
             "<p>If you have a movie with strong brightness variations, you may try setting 'Auto contrast stacks' "+
-            "in Edit&gt;Options&gt;Appearance. Bright spots will get saturated, but you may better see the faint ones.</p>"+
+            "in <i>Edit&gt;Options&gt;Appearance...</i>&nbsp; Bright spots will appear saturated, but you may better see the faint ones.</p>"+
             "<p>Why is there a <tt>(V)</tt> at the end of title of many image stacks? The <tt>(V)</tt> stands for "+
             "<i>virtual stack</i>, i.e., the images are not in memory but read from disk or calculated on the fly if "+
             "required. The stack named <tt>..._SpotTracking</tt> (created by the ViPErLEED Spot Tracker) is a virtual "+
             "stack with caching; its slices are kept in memory as long as there is sufficient memory. "+
             "You can click on the status line at the bottom of the main ImageJ toolbar to see the used and total memory. "+
-            "Use Edit&gt;Options&gt;Memory&amp;Threads to change the maximum amount of "+
+            "Use <i>Edit&gt;Options&gt;Memory&amp;Threads...<i> to change the maximum amount of "+
             "memory allocated to ImageJ (requires restarting ImageJ thereafter; "+
-            "make sure you allocate less than the RAM available in your computer!)</p>"+
+            "make sure you allocate less than the RAM available in your computer).</p>"+
             "<p>If you get an error message saying that all memory has been used, it may help to add"+
             "<pre>   -XX:SoftRefLRUPolicyMSPerMB=100</pre> "+
             "to the options for the Java Virtual Machine (JVM). These options are in the ImageJ.cfg file in the ImageJ folder. "+
             "On MacOS, these options are in the info.plist inside the ImageJ package: "+
             "Right-click on ImageJ in the Finder and select &quot;Show package contents&quot;. "+
             "The same command with a value of 10 instead of 100 would be even stronger, telling Java "+
-            "to be very restrictive with memory spent for caches; this will usually lead to longer execution times.</p>"+
+            "to be very restrictive with memory spent for caches. "+
+            "The downside is that this will usually lead to longer execution times.</p>"+
             "<p>ImageJ can save images (also image stacks and plots) as .zip files. These are compressed .tif files "+
             "that can be directly opened in ImageJ without unpacking (also by drag&amp;drop onto the status line of the main ImageJ panel). "+
-            "I(V) movies recorded as ViPErLEED .zip archives can NOT be opened by the ImageJ File&gt;Open command "+
-            "(or drag&amp;drop  on the status line); use Open LEED Movie for these.<br>"+
+            "I(V) movies recorded as ViPErLEED .zip archives can NOT be opened by the ImageJ <i>File&gt;Open</i> command "+
+            "(or drag&amp;drop  on the status line); use Open LEED Movie or "+
+            "<a href='#openImagesMovies'>More>>Open images/movies</a> for these.<br>"+
             "The file types .tif and .zip are the preferred formats for saving, since they contain the full information "+
             "and image resolution. The mask can be also saved as .png file. "+
             "NEVER save images as .jpg unless they are meant for illustration only; even then mind that .jpg "+
@@ -585,12 +598,12 @@ public class LeedSpotTrackerHelp {
             "With the mouse over the left or lower border, there are also other gray symbols; "+
             "their meaning is explained in the help text appearing in the status line of the plot "+
             "when the mouse cursor is above such a symbol. <br>"+
-            "You can set the default size of plots (and final size of plot stacks) with Edit&gt;Options&gt;Plots.</p>"+
+            "You can set the default size of plots (and final size of plot stacks) with <i>Edit&gt;Options&gt;Plots...<i></p>"+
             "<p>Many functions of the "+LEED_Spot_Tracker.PLUGIN_NAME+" can be controlled and automated via "+
             "the ImageJ macro language. "+
-            "Record macro commands with Plugins&gt;Macros&gt;Record...</p>"+
+            "Record macro commands with <i>Plugins&gt;Macros&gt;Record...</i></p>"+
             "<p>For smoothing in ViPErLEED, the strength of smoothing is given as the inverse square of the noise gain for white noise. "+
-            "E.g., '9 points' means that smoothing will reduce white noise by a factor of approximately 1/3. "+
+            "E.g., '9 points' means that smoothing will reduce white noise to approximately 1/3 of its original value. "+
             "This corresponds to the noise suppression of a moving average over 9 points. "+
             "The actual smoothing algorithm averages over more points with a weight function. "+
             "For I0 data and <i>I</i>(<i>V</i>) curves a modified sinc smoother [<a href='#msSmooth'>2</a>] is used.</p>"+

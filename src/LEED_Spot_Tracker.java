@@ -51,7 +51,7 @@ import java.util.concurrent.atomic.*;
  */
 
 public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener, ActionListener, WindowListener, MacroExtension, KeyListener {
-    static final public String VERSION = "1.01";
+    static final public String VERSION = "1.02";
     static final String PLUGIN_NAME = "LEED Spot Tracker";              //for dialog && error message titles
     static final String LOC_KEY_D = "leedSpotTracker.location";         //position of dialog
     static final String LOC_KEY_S = "leedSpotTracker.stackloc";         //position of SpotTracking stack
@@ -158,6 +158,8 @@ public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener,
     LeedSpotPattern spotPattern;    //from spot pattern file, defines which spots we can have and their reciprocal-sapce coordinates
     LeedScreenFitter screenFitter;  //converts kx, ky to screen coordinates
     static double[] screenFitterArray; //remembers conversion between kx, ky and screen coordinates
+    private Thread overlayThread;   //paints the overlay on the 'Spot tracking' stack
+    private Object overlaySynchronizer = new Object(); //avoids concurrent call of overlay painting
     int xOfIndexInput;              //stack slice-1 where indices have been defined; spot tracking starts here
     LeedIVAnalyzer ivAnalyzer;      //gets data and holds it
     ArrayList<String> logLines;     //parameters for log file in human-readable form
@@ -759,25 +761,41 @@ public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener,
 
     /** Creates the overlay with the spot names */
     void drawOverlays() {
-        final ImagePlus stackImp = this.stackImp;
-        new Thread(
-            new Runnable() {    //after (accidentally) closing and re-opening the stack, we have to wait until it is there
-                final public void run() {
-                    if (stackImp == null) return;
-                    IJ.wait(100);
-                    if (flagSet(status, TRACK_OK)) {
-                        ivAnalyzer.showOverlay(stackImp);   //also sets energy&mask overlays
-                    } else {
-                        if (flagSet(status, ENERGY_OK))
-                            LeedOverlay.add(stackImp, energiesEtc[xAxisVariable]);
-                        if (flagSet(status, MASK_OK))
-                            LeedOverlay.addMask(stackImp, maskRoi);
-                        stackImp.draw();
+        synchronized (overlaySynchronizer) {
+            final ImagePlus stackImp = this.stackImp;
+            final Thread previousOverlayThread = overlayThread;
+            if (stackImp == null) return;
+            overlayThread = new Thread(
+                new Runnable() {    //after (accidentally) closing and re-opening the stack, we have to wait until it is there
+                    final public void run() {
+                        if (previousOverlayThread != null && previousOverlayThread.isAlive()) {
+                            previousOverlayThread.interrupt();
+                            try {
+                                previousOverlayThread.join();
+                            } catch (InterruptedException e) {return;}
+                        }
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {return;}
+                        LeedIVAnalyzer ivAnalyzerUsed = ivAnalyzer;
+                        if (flagSet(status, TRACK_OK) && ivAnalyzerUsed != null) {
+                            ivAnalyzerUsed.showOverlay(stackImp);   //also sets energy&mask overlays
+                        } else {
+                            drawBasicOverlay();
+                            stackImp.draw();
+                        }
                     }
-                }
-            }, PLUGIN_NAME+"_makeOverlays"
-        ).start();
+                }, PLUGIN_NAME+"_makeOverlays");
+            overlayThread.start();
+        }
     }
+
+    /** Creates the basic overlay with mask, energy and spot shape */
+    void drawBasicOverlay() {
+        if (flagSet(status, ENERGY_OK) || flagSet(status, MASK_OK))
+            LeedOverlay.add(stackImp, flagSet(status, ENERGY_OK) ? energiesEtc[xAxisVariable] : null, xAxisVariable==ENERGY,
+                    flagSet(status, MASK_OK) ? maskRoi : null);
+    }        
 
     void readEnergiesEtc(final ImageStack stack) {
         ImageStack darkStack = impFieldImps[DARK] != null ? impFieldImps[DARK].getStack() : null;
@@ -861,7 +879,7 @@ public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener,
      *  and saves it in the parameters */
     void askForIndices() {
         LeedIndexSelector indexSelector = new LeedIndexSelector(this, stackImp, impFieldImps[MASK], maskRoi,
-                energiesEtc[ENERGY], spotPattern, screenFitterArray);
+                energiesEtc, xAxisVariable, spotPattern, screenFitterArray);
         enableAndHighlightComponents(false); // block all buttons&choices
         new Thread(indexSelector).start();   // separate thread, because it is nonmodal and requires user interaction
     }
@@ -869,6 +887,7 @@ public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener,
     void askForRadius() {
         new LeedRadiusSelector(this, stackImp, energyMin, energyMax, spotPattern.isSuperstructure()).run();
         showRadii();
+        drawOverlays();
     }
 
     /** Tracks the spots, analyzes the spots over all slices and creates output tables including I(V) curves*/
@@ -1018,7 +1037,7 @@ public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener,
 
     /** Compares the numeric parameters of a previous session from a _log.txt file with the current ones */
     void compareParametersWithFile() {
-        Object dataOrError = LeedParams.readFromFile(null, true);
+        Object dataOrError = LeedParams.readFromFile(null, /*compare=*/true);
         if (dataOrError == null) return;
         if (dataOrError instanceof String)
             IJ.error(PLUGIN_NAME, (String)dataOrError);
@@ -1912,7 +1931,7 @@ public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener,
         double radius = LeedRadiusSelector.radius(energy, false);
         double azBlurRadians = Math.toRadians(LeedParams.get(LeedParams.AZIMUTHBLURANGLE));
         LeedIndexSelector indexSelector = new LeedIndexSelector(this, stackImp, impFieldImps[MASK],
-                maskRoi, energiesEtc[ENERGY], spotPattern, screenFitterArray);
+                maskRoi, energiesEtc, xAxisVariable, spotPattern, screenFitterArray);
         double[][] xyMax = LeedIndexSliceSelector.findSpotMaxima(stackImp, impFieldImps[MASK],
             maskRoi, spotBackgrShape, radius, azBlurRadians, LeedParams.get(LeedParams.MINSIGNIFICANCEINDEX));
         if (xyMax[0].length < LeedIndexSliceSelector.MIN_N_MAXIMA)

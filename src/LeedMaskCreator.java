@@ -8,6 +8,7 @@ import ij.plugin.filter.RankFilters;
 import ij.plugin.filter.ThresholdToSelection;
 import ij.gui.*;
 import java.awt.*;
+import java.util.Arrays;
 
 
 /**
@@ -236,6 +237,8 @@ public class LeedMaskCreator implements Runnable, DialogListener {
         int width = ip.getWidth();
         int height = ip.getHeight();
         double[] roiParams = ((EllipseRoi)ellipseOutlineRoi).getParams();
+        //IJ.log("Ellipse w,h="+width+","+height+";roiParams="+Arrays.toString(roiParams));
+        if (LeedUtils.countNonNaN(roiParams) != roiParams.length) return null;
         double xC = 0.5*(roiParams[0] + roiParams[2]);
         double yC = 0.5*(roiParams[1] + roiParams[3]);
         double vLength = Math.sqrt(sqr(roiParams[0] - roiParams[2]) + sqr(roiParams[1] - roiParams[3]));

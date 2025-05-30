@@ -35,7 +35,7 @@ public class LeedRFactor {
     public static final int AVG_INTENSITY = 4;          //average intensity of the curves (actually sqrt(average intensity 1 * average intensity 2)
     public static final int N_OVERLAP = 5;              //number of points in common region of the curves
     public static final int RATIO = 6;                  //ratio of data2/data1 average
-    public static final int OUTPUT_SIZE = 7;
+    public static final int OUTPUT_SIZE = 7;            //the length of the output array 0...6
     public static final String[] R_FACTOR_NAMES = new String[] {"R_Pendry", "R_PeMod"};
 
 

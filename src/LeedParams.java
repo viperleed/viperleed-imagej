@@ -181,7 +181,7 @@ public class LeedParams {
             3.0,                                    // AZIMUTHBLURANGLE (half-angle in degrees)
             30,                                     // POSITIONAVERAGINGEV
             2.5,                                    // MINSIGNIFICANCETRACK
-            30.,                                    // SEARCHAGAINEV
+            10.,                                    // SEARCHAGAINEV
             1,                                      // NEIGHBORBACKGROUND
             0,                                      // I0FROMBACKGR
             2.0,                                    // MINSIGNIFICANCEINDEX
@@ -497,7 +497,7 @@ public class LeedParams {
     /** Displays a table of numeric parameter differences */
     private static void tabulateDifferences(String filename, double[] fileParams, double[] params) {
         ResultsTable rt = new ResultsTable();
-        for (int i=0; i<N_PARAM; i++) {
+        for (int i=1; i<N_PARAM; i++) {         //ignore 0, version
             if (fileParams[i] != params[i]) {
                 rt.incrementCounter();
                 rt.addLabel(NUMERIC_PARAM_NAMES[i]);

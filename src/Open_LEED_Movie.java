@@ -436,7 +436,7 @@ public class Open_LEED_Movie extends VirtualStack implements PlugIn {
         StringBuilder label = new StringBuilder(100);
         String[] headings = rt.getHeadings();
         String[] shortHeadings = headings.clone();
-        for (int i=0; i<headings.length; i++) {     //shorter names for stack slice labels (these will be truncated for display)
+        for (int i=0; i<headings.length; i++) {     //shorter names for stack slice labels (these may be truncated for display)
             if ("energy".equalsIgnoreCase(shortHeadings[i]))
                 shortHeadings[i] = "E";
             else if ("time".equalsIgnoreCase(shortHeadings[i]) || "times".equalsIgnoreCase(shortHeadings[i]))
@@ -447,6 +447,8 @@ public class Open_LEED_Movie extends VirtualStack implements PlugIn {
                 shortHeadings[i] = "Tcj";
             else if ("I_sample".equalsIgnoreCase(shortHeadings[i]))
                 shortHeadings[i] = "Is";
+            else if ("Measured_Energy".equalsIgnoreCase(shortHeadings[i]))
+                shortHeadings[i] = "Emeas";
             else if ("label".equalsIgnoreCase(shortHeadings[i]) ||
                     "date".equalsIgnoreCase(shortHeadings[i]) ||
                     "clock".equalsIgnoreCase(shortHeadings[i]))

@@ -86,8 +86,15 @@ public class LeedInterpolator {
         for (int iRange=0; iRange<rangeLimits.length/2; iRange++) {
             int rStart = rangeLimits[2*iRange];
             int rEnd = rangeLimits[2*iRange+1];
-            int newStart = (int)Math.ceil((oldX[rStart]-newX[0])/newStep - 1e-10);
-            int newEnd = (int)Math.floor((oldX[rEnd-1]-newX[0])/newStep + 1e-10) + 1;
+            double oldXstart = oldX[rStart];
+            double oldXend = oldX[rEnd-1];
+            if (oldXstart > oldXend) {              //allow for inverse x axis at the input
+                double swaptmp = oldXend;
+                oldXend = oldXstart;
+                oldXstart = swaptmp;
+            }
+            int newStart = (int)Math.ceil((oldXstart-newX[0])/newStep - 1e-10);
+            int newEnd = (int)Math.floor((oldXend-newX[0])/newStep + 1e-10) + 1;
             if (newStart < 0) newStart = 0;
             if (newEnd > newX.length) newEnd = newX.length;
             if (newEnd - newStart < 1) continue;    //nothing to do in output array
@@ -105,6 +112,11 @@ public class LeedInterpolator {
             int firstValid, int endValid, int newStart, int newEnd) {
         float[] oldXF = extractFloat(oldX, firstValid, endValid);
         float[] oldDF = extractFloat(oldData, firstValid, endValid);
+        boolean inverse = oldXF[0] > oldXF[oldXF.length - 1];
+        if (inverse) {
+            LeedUtils.reverseArray(oldXF);
+            LeedUtils.reverseArray(oldDF);
+        }
         SplineFitter spline = new SplineFitter(oldXF, oldDF, endValid-firstValid);
         for (int i=newStart; i<newEnd; i++) {
             double x = newX[i];

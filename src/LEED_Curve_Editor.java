@@ -69,7 +69,7 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
             "<html>"+
             "<h1>Parameters and Settings for the ViPErLEED I(V) Curve Editor</h1>"+
             "<ul>"+
-            "<li><b>V0i</b>: Imaginary part of the inner potential  (strictly speaking, its absolute value), needed for calculating the R factor. "+
+            "<li><b>V0i</b>: Imaginary part of the inner potential  (strictly speaking, its absolute value), needed for calculating the <i>R</i> factor. "+
             "When averaging symmetry-equivalent curves that do not all include the full energy range, "+
             "V0i also determines the width of the transition zone with smooth fade in/fade out. "+
             "If V0i is not known, use, e.g., a value of 5 eV.</li>"+
@@ -79,8 +79,8 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
             "If a <a href='#editFile'>previous edit file</a> is used, "+
             "this setting has no effect and the value from the previous session is used.</li>"+
             "<li><b>Min. data range per curve</b>: Curves with fewer contiguous data points than this are ignored. "+
-            "Note that you cannot make ignored curves (with too few points) visible any more in the current editing session "+
-            "(You have to close &amp; open the Curve Editor to get them back).</li>"+
+            "Note that you cannot make ignored curves (with too few points) visible any more in the current editing session. "+
+            "You have to close and open the Curve Editor to get them back.</li>"+
             "<li><b>Lowest energy to use</b> and <b>Highest energy to use</b>: "+
             "The default energy range  if a beam is selected for the first time. "+
             "These parameters also limit the range for automatic (noise-dependent) selection of energy ranges. "+

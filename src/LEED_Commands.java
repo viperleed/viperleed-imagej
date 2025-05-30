@@ -55,7 +55,7 @@ public class LEED_Commands extends PlugInFrame implements MouseListener {
             "(Plugins>Utilities>Find Commands, or type "+LeedUtils.CTRL+"-L)</p>"+
             "<ul>"+
             "<li><b>Open LEED Movie</b> opens a ViPErLEED movie stored as a .zip file or an 'AIDA' LEED movie "+
-            "(Automatic Image and Data Acquisition, EE2000/EE2010; *.vid format). LEED movies are shown as "+
+            "(Automatic Image and Data Acquisition, EE2000/EE2010; <tt>*.vid</tt> format). LEED movies are shown as "+
             "<em>Image Stacks</em> in ImageJ.</li>"+
             "<li>The <b>Spot Tracker</b> is used to extract <i>I</i>(<i>V</i>) curves from a LEED movie.</li>"+
             "<li>The <b>I(V) Curve Editor</b> is used for selection and smoothing of experimental <i>I</i>(<i>V</i>) curves.</li>"+

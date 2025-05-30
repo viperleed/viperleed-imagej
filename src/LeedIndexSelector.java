@@ -39,7 +39,8 @@ public class LeedIndexSelector  implements Runnable, DialogListener, ActionListe
     ImagePlus stackImp;
     ImagePlus maskImp;
     Roi maskRoi;
-    double[] energies;
+    double[][] energiesEtc;
+    int xAxisVariable;                  //index of x axis in energiesEtc
     LeedSpotPattern spotPattern;
     double[] screenFitterArray;         //previous screen fitter values
     LeedScreenFitter screenFitter;      //the result of using this class
@@ -71,12 +72,13 @@ public class LeedIndexSelector  implements Runnable, DialogListener, ActionListe
 
 
     public LeedIndexSelector(LEED_Spot_Tracker spotTracker, ImagePlus stackImp, ImagePlus maskImp, Roi maskRoi,
-            double[] energies, LeedSpotPattern spotPattern, double[] screenFitterArray) {
+            double[][] energiesEtc, int xAxisVariable, LeedSpotPattern spotPattern, double[] screenFitterArray) {
         this.spotTracker = spotTracker;
         this.stackImp = stackImp;
         this.maskImp = maskImp;
         this.maskRoi = maskRoi;
-        this.energies = energies;
+        this.energiesEtc = energiesEtc;
+        this.xAxisVariable = xAxisVariable;
         this.spotPattern = spotPattern;
         this.screenFitterArray = screenFitterArray;
     }
@@ -144,8 +146,7 @@ public class LeedIndexSelector  implements Runnable, DialogListener, ActionListe
                 return;
             }
             stackImp.setOverlay(null);                  //if we have many spots marked, deleting by name takes tool long
-            LeedOverlay.add(stackImp, energies);        //adding energies & mask is faster
-            LeedOverlay.addMask(stackImp, maskRoi);
+            LeedOverlay.add(stackImp, energiesEtc[xAxisVariable], xAxisVariable==LEED_Spot_Tracker.ENERGY, maskRoi); //rather start from scratch
             stackImp.draw();
 
             Rectangle maskRect = maskRoi.getBounds();
@@ -155,7 +156,7 @@ public class LeedIndexSelector  implements Runnable, DialogListener, ActionListe
 
             //show maxima and ask the user to set energy and significance threshold
             Object maximaOrScreenFitter = (new LeedIndexSliceSelector()).getMaxima(spotTracker,
-                    this, stackImp, maskImp, maskRoi, energies, screenFitterArray);
+                    this, stackImp, maskImp, maskRoi, energiesEtc[LEED_Spot_Tracker.ENERGY], screenFitterArray);
             if (maximaOrScreenFitter == null) {         //LeedIndexSliceSelector canceled
                 spotTracker.enableAndHighlightComponents(true);
                 return;
@@ -169,7 +170,7 @@ public class LeedIndexSelector  implements Runnable, DialogListener, ActionListe
             }
 
             stackSlice = stackImp.getCurrentSlice();
-            energy = LEED_Spot_Tracker.sliceToEnergy(energies, stackSlice);
+            energy = LEED_Spot_Tracker.sliceToEnergy(energiesEtc[LEED_Spot_Tracker.ENERGY], stackSlice);
             radius = LeedRadiusSelector.radius(energy, false);
 
             if (maximaOrScreenFitter instanceof double[][]) {   //we have to ask the user for labels for the maxima

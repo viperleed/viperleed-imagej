@@ -15,7 +15,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.lang.ref.*;
 
-/** This class implements the functionality of the 'Track SPots' button of the Spot Tracker.
+/** This class implements the functionality of the 'Track Spots' button of the Spot Tracker.
  *  It shows the dialog, does the spot tracking and I(V) measurement on a stack
  *  and then creates plots and tables with the results. */
 
@@ -111,7 +111,8 @@ public class LeedIVAnalyzer implements Runnable {
     static WeakHashMap<ImagePlus,String> plotImpList = new WeakHashMap<ImagePlus,String>();
     static int currentRunNumber = 1;        //each run gets a higher number, for numbering plots in plotImpList
 
-    /** Creator */
+    /** Creator. If this is not a standard LEED I(V) experiment with spots moving with 1/sqrt(E),
+     *  'energies' should be null. */
     public LeedIVAnalyzer(LEED_Spot_Tracker spotTracker, LeedSpotPattern spotPattern,
             ImagePlus stackImp, ImagePlus maskImp, Roi maskRoi,
             double[] energies, double[] processedI0, double[] xAxis, String xAxisLabel,
@@ -200,7 +201,7 @@ public class LeedIVAnalyzer implements Runnable {
                 gd.addNumericField("Search beam unseen for", searchAgain, 0, 6, eVstr+"(typ. 30)");
                 gd.addNumericField((useEnergies ? "Energy" : "Data")+" range for x, y smoothing", positionAveraging, 0, 6, eVstr+"(typ. 30)");
                 gd.addNumericField("Min. "+(useEnergies ? "energy" : "data")+" range per beam", minEnergyRange, 0, 6, eVstr+"(0 to measure sub-threshold)");
-                if (spotBackgrShape != LeedSpotAnalyzer.AZIMUTH_BLUR)
+                if (spotBackgrShape == LeedSpotAnalyzer.CIRCLE || spotBackgrShape == LeedSpotAnalyzer.OVAL)
                     gd.addCheckbox("Subtract background of bright neighbor spots", subtractNeighborBackground);
                 if (canCorrectI0fromBackgr)
                     gd.addCheckbox("Apply fast background changes to I0", i0FromBackgr);
@@ -249,7 +250,7 @@ public class LeedIVAnalyzer implements Runnable {
                 searchAgain = gd.getNextNumber();
                 positionAveraging = gd.getNextNumber();
                 minEnergyRange = gd.getNextNumber();
-                if (spotBackgrShape != LeedSpotAnalyzer.AZIMUTH_BLUR)
+                if (spotBackgrShape == LeedSpotAnalyzer.CIRCLE || spotBackgrShape == LeedSpotAnalyzer.OVAL)
                     subtractNeighborBackground = gd.getNextBoolean();
                 if (canCorrectI0fromBackgr)
                     i0FromBackgr = gd.getNextBoolean();
@@ -321,20 +322,24 @@ public class LeedIVAnalyzer implements Runnable {
             double significanceDecay = Math.pow(NO_SIGNIFICANCE/(2*minSignificance),
                     1./searchAgain);                                    // decayingSignificance is multiplied with this each time
 
+            if (debug) {IJ.wait(200); IJ.log("SEARCH: ascend");}
             for (int i=sliceOfIndexInput; i<stackSize; i++)             //from start upwards in energy>; note that i is from 0 to nSlices-1
                 findSpots(i, Math.max(i-1, sliceOfIndexInput), lastDeltaX, lastDeltaY, lastSeen, searchAgain,
                         retainedSignificance, decayingSignificance, significanceDecay);
             Arrays.fill(decayingSignificance, 0);
+            if (debug) {IJ.wait(200); IJ.log("SEARCH: descend");}
             for (int i=stackSize-2; i>=0; i--)                          //all the way downwards in energy
                 findSpots(i, Math.min(i+1, stackSize-1), lastDeltaX, lastDeltaY, lastSeen, searchAgain,
                         retainedSignificance, decayingSignificance, significanceDecay);
             Arrays.fill(decayingSignificance, 0);
             boolean dataAdded = false;
+            if (debug) {IJ.wait(200); IJ.log("SEARCH: ascend again");}
             for (int i=0; i<sliceOfIndexInput; i++)                     //from zero upwards in energy
                 if (findSpots(i, Math.max(i-1,0), lastDeltaX, lastDeltaY, lastSeen, searchAgain,
                         retainedSignificance, decayingSignificance, significanceDecay));
                     dataAdded = true;
             if (dataAdded || minEnergyRange==0) {                       //only if the last pass has added spots or we want x&y from up&down pass
+                if (debug) {IJ.wait(200); IJ.log("SEARCH: ascend beyond start");}
                 progressInc *= 0.1;
                 for (int i=sliceOfIndexInput; i<stackSize; i++)         //from start up to the end in energy
                     findSpots(i, Math.max(i-1,0), lastDeltaX, lastDeltaY, lastSeen, searchAgain,
@@ -564,7 +569,7 @@ public class LeedIVAnalyzer implements Runnable {
                                             maskRoi.contains((int)xs, (int)ys)) {           //not found with delta: also try uncorrected model
                                         spotData = LeedSpotAnalyzer.centerAndAnalyzeSpot(xs, ys, maskCenterX, maskCenterY,
                                             spotBackgrShape, radius, azBlurRadians, minSignificance, stackIp, maskIp, spotData);
-                                        if (spot==debugSpot /*&& spotData[PSIGNIFICANCE]>minSignificance*/) IJ.log(IJ.d2s(xAxis[sliceI],1)+" Success at uncorrected x,y="+
+                                        if (spot==debugSpot) IJ.log(IJ.d2s(xAxis[sliceI],1)+" Success at uncorrected x,y="+
                                                 IJ.d2s(xs,1)+","+IJ.d2s(ys,1)+": Signif="+IJ.d2s(spotData[PSIGNIFICANCE],2)+
                                                 " at "+IJ.d2s(spotData[X],1)+","+IJ.d2s(spotData[Y],1));
                                     }
@@ -760,6 +765,7 @@ public class LeedIVAnalyzer implements Runnable {
             int first = -1, last = -1;                  //first and last point currently in the fit
             int nDataPoints = 0;
             for (int i=0; i<xAxis.length; i++) {
+if (spot==debugSpot)IJ.log("i="+i+" weight1="+weight1[i]+" atOrAfter="+nSpotsAtOrAfter+" lastEnergyI="+lastEnergyI);
                 if (nSpotsAtOrAfter > 0 && weight1[i] != 0) {
                     if (weight1[i] > LOW_WEIGHT) {      //also for sub-threshold, we count only measured points (i.e., > LOW_WEIGHT)
                         nSpotsBefore++;                 //current point becomes a 'before' point
@@ -781,7 +787,7 @@ public class LeedIVAnalyzer implements Runnable {
                 }
                 int neededSpotsAtOrAfter = pointsPerSide;
                 if (weight1[i] != 0) neededSpotsAtOrAfter++;
-                for (int j=last+1; (nSpotsAtOrAfter < neededSpotsAtOrAfter) && j<lastEnergyI; j++) {
+                for (int j=last+1; (nSpotsAtOrAfter < neededSpotsAtOrAfter) && j<=lastEnergyI; j++) {
                     if (weight1[j] != 0) {              //add this point to the fit
                         xLine.addPointW(invSqrtEnergy[j], data[DELTAX][spot][j], weight1[j]);
                         yLine.addPointW(invSqrtEnergy[j], data[DELTAY][spot][j], weight1[j]);
@@ -804,9 +810,9 @@ public class LeedIVAnalyzer implements Runnable {
                     input2y[i] = yLine.getFitValueWithMinSlope(invSqrtEnergy[i], /*yErrSqr=*/ 4, nDataPoints);
                 }
                 boolean enoughData = xLine.counter >= 2*no_weight || useSubThreshold;   //require at least two measured data points
-                weight2x[i] = enoughData ? xLine.getFitWeight(invSqrtEnergy[i]) : 0;
-                weight2y[i] = enoughData ? yLine.getFitWeight(invSqrtEnergy[i]) : 0;
-                if (spot==debugSpot && (i==xAxis.length/8 || i==xAxis.length*2/3|| i==1701))
+                weight2x[i] = enoughData ? xLine.getFitWeight(invSqrtEnergy[i]) : 1e-30;
+                weight2y[i] = enoughData ? yLine.getFitWeight(invSqrtEnergy[i]) : 1e-30;
+                if (spot==debugSpot && (i==xAxis.length/8 || i==(int)Math.round(xAxis.length*0.67) || i==1701))
                     IJ.log(spotPattern.getName(spot)+" 1stSmoothing@"+IJ.d2s(xAxis[i],1)+" Before,After="+nSpotsBefore+","+nSpotsAtOrAfter+
                             "/"+pointsPerSide+" rangeUsed="+IJ.d2s(xAxis[Math.max(first,0)],1)+","+IJ.d2s(xAxis[Math.min(last,xAxis.length-1)],1)+
                             "\n ->x,y="+IJ.d2s(input2x[i])+","+IJ.d2s(input2y[i])+" weight2x,y="+LeedUtils.d2s(weight2x[i],3)+","+LeedUtils.d2s(weight2y[i],3)+
@@ -828,7 +834,7 @@ public class LeedIVAnalyzer implements Runnable {
                     xLine.addPointW(invSqrtEnergy[iAdd], input2x[iAdd], weight2x[iAdd]);
                     yLine.addPointW(invSqrtEnergy[iAdd], input2y[iAdd], weight2y[iAdd]);
                 }
-                int iRemove = i - pointsPerSide -1;
+                int iRemove = i - pointsPerSide - 1;
                 if (iRemove >= 0) {
                     xLine.addPointW(invSqrtEnergy[iRemove], input2x[iRemove], -weight2x[iRemove]);
                     yLine.addPointW(invSqrtEnergy[iRemove], input2y[iRemove], -weight2y[iRemove]);
@@ -1794,18 +1800,19 @@ public class LeedIVAnalyzer implements Runnable {
         return false;
     }
 
-    /** Shows the spot positions as overlay */
+    /** Shows the spot positions as overlay. Can be called in a background thread, interruptible */
     public void showOverlay(ImagePlus imp) {
         IJ.showStatus("creating overlay");
         imp.setOverlay(null);               //if we have many spots marked, deleting by name takes too long
-        LeedOverlay.add(imp, xAxis);        //deleting all and adding energies & mask is faster
-        LeedOverlay.addMask(imp, maskRoi);
+        spotTracker.drawBasicOverlay();     //deleting all and adding energies & mask is faster
+        LeedOverlay.add(imp, xAxis, energies!=null, maskRoi);
         double minDistance1eV = Double.NaN;
         if (screenFitter != null) {
             double minDistance = spotPattern.getMinDistance() * screenFitter.kToScreenScale();
             minDistance1eV = minDistance * Math.sqrt(getEnergy(sliceOfIndexInput));
         }
         for (int i=0; i<imp.getNSlices(); i++) {
+            if (Thread.currentThread().isInterrupted()) return;
             if (!Double.isNaN(minDistance1eV)) {
                 float nameSize = (int)Math.round(0.3*minDistance1eV/Math.sqrt(getEnergy(i)));
                 LeedOverlay.setFontSize(nameSize);
