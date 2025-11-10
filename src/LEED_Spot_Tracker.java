@@ -24,20 +24,12 @@ import java.util.concurrent.atomic.*;
 /** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
- *  When using and/or modifying this program for scientific work, please cite
- *  the paper describing it:
- *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
- *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2019-2024
- * 
- *  The collection of ViPErLEED ImageJ plugins is free software:
- *  you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  *  The collection of ViPErLEED ImageJ plugins is distributed
  *  in the hope that it will be useful,
@@ -45,13 +37,23 @@ import java.util.concurrent.atomic.*;
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
+ *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
+ *  When using and/or modifying this program for scientific work, please cite
+ *  the paper describing it:
+ *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
+ *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2019-2025
  */
 
+
 public class LEED_Spot_Tracker implements PlugIn, DialogListener, ImageListener, ActionListener, WindowListener, MacroExtension, KeyListener {
-    static final public String VERSION = "1.02";
+    static final public String VERSION = "1.03";
     static final String PLUGIN_NAME = "LEED Spot Tracker";              //for dialog && error message titles
     static final String LOC_KEY_D = "leedSpotTracker.location";         //position of dialog
     static final String LOC_KEY_S = "leedSpotTracker.stackloc";         //position of SpotTracking stack

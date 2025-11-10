@@ -3,19 +3,36 @@ import ij.IJ;
 /** This class contains help messages for the ViPErLEED Spot Tracker.
  */
 
-/** This code is part of the ViPErLEED package for LEED I(V) analysis.
+/** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
  *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
  *  When using and/or modifying this program for scientific work, please cite
  *  the paper describing it:
  *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2020-2024
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2019-2025
  */
+
 
 public class LeedSpotTrackerHelp {
 
@@ -138,7 +155,7 @@ public class LeedSpotTrackerHelp {
             "images or a linear fit over all images of a stack require some computing time. "+
             "It may take several seconds until the processed result becomes available; this may also "+
             "cause a delay in opening the Spot Tracker main panel when it automatically selects the input "+
-            "images or stacks. Expect delays especially if the inputs are supplied as virtual stacks "+
+            "images or stacks. Expect delays especially if the inputs are supplied as <a href='#virtualStack'>virtual stacks</a> "+
             "(i.e., not kept in memory but read from disk on demand).</p>";
     private static final String HELP_SETENERGIES =
             "<h2><a name='setEnergies'>Set Energies, I0, t</a></h2>"+
@@ -273,7 +290,9 @@ public class LeedSpotTrackerHelp {
             "for whether the background area of a spot overlaps with the integration disk of any of its neighbors. "+
             "Thus, use these modes only if the spots are well-separated up to the highest energy.</p>"+
             "<p>The type and size of the integration and background areas are indicated at the top right of the SpotTracking stack. "+
-            "(Not updated while the dialog is open.)</p>";
+            "(Not updated while the dialog is open.)</p>"+
+            "<p>The size and type of the integration and background areas are indicated in the top right corner of the "+
+            "&quot;SpotTracking&quot; movie.</p>";
     private static final String HELP_TRACKSPOTS1 =
             "<h2><a name='trackSpots'>Track Spots</a></h2>"+
             "<p>Starts spot tracking and intensity measurements (may take up to a minute). "+
@@ -348,13 +367,15 @@ public class LeedSpotTrackerHelp {
             "<p>The other parameters in this input window only affect the <a href='#qualityPlot'>quality statistics plot</a> "+
             "for analysis of equivalent beams; "+
             "these options are only available for <i>I</i>(<i>V</i>) measurements, not for, e.g., time-dependent measurements. "+
-            "These are the V0i parameter of Pendry's <i>R</i> factor  (strictly speaking, its absolute value), "+
+            "These are the V0i parameter of the <i>R</i> factor  (strictly speaking, the absolute value of V0i), "+
             "the smoothing before calculating <i>R</i> factors (default "+IJ.d2s(LeedParams.getDefaultValue(LeedParams.SMOOTHEV),0)+" eV), "+
             "and the energy ranges handled separately (default "+IJ.d2s(LeedParams.getDefaultValue(LeedParams.SPLITEV),1)+" eV): "+
             "<i>I</i>(<i>V</i>) curves are split into regions roughly this size, "+
             "and for statistics, the <i>R</i> factor between symmetry-equivalent beams is evaluated for each of these regions. "+
             "(Splitting into ~100 eV sections is done because the intensities of the low- and high-energy regions "+
-            "are often very different; the plot shows mutual <i>R</i> factors vs. intensity.)</p>"+
+            "are often very different; the plot shows mutual <i>R</i> factors vs. intensity.)<br>"+
+            "The R factor types currently supported are Pendry's R factor <i>R</i><sub>P</sub> and the &quot;smooth&quot; "+
+            "R factor <i>R</i><sub>S</sub> <a href='#Rsmooth'>[3]</a>.</p>"+
             "<p>One can also decide to create only two quick plots (<a href='#selectedCurves'>Selected IV Curves</a> and "+
             "<i>I</i>(<i>V</i>) Quality Statistics) instead of all plots. For large datasets, this avoids the time-consuming creation "+
             "of large plot stacks. This is useful if the analysis is only meant to check the alignment of the sample, "+
@@ -528,7 +549,7 @@ public class LeedSpotTrackerHelp {
             "overall deviations caused by residual fields are taken into account. "+
             "The output can be normalized, by dividing by the processed I0 (if available), to eliminate "+
             "brightness variations due to changes of the incident electron beam current. "+
-            "The output of stack undistortion is a virtual stack with caching. "+
+            "The output of stack undistortion is a <a href='#virtualStack'>virtual stack</a> with caching. "+
             "Thus, the images are created only when needed. This means that the output is quickly visible, "+
             "but some image operations using the undistorted output will be initially slow, "+
             "until all slices of that stack have been created. "+
@@ -538,7 +559,12 @@ public class LeedSpotTrackerHelp {
             "(<i>Image&gt;Stacks&gt;Z Project...</i>) "+
             "requires ImageJ version 1.54j or later. "+
             "Further processing of the undistorted stack (e.g., background subtraction, resizing) "+
-            "requires that you duplicate this stack.</dd>"+
+            "requires that you duplicate this stack.<br>"+
+            "Averaging over a range of energies of the undistorted stack with fixed k-space scale "+
+            "is handy to search for weak spots that may be hard to detect in individual slices "+
+            "due to modulations by the grid and noise. "+
+            "One can also create sections through k space with the energy axis up, "+
+            "by duplicating the stack and then using Image>Stacks>Reslice [/]...</dd>"+
             "<dt>List parameters</dt><dd>Creates a table with all numeric parameters; mainly for debugging. "+
             "When in macro-recording mode (<i>Plugins&gt;Macros&gt;Record...</i>), "+
             "also writes the macro commands for setting all parameter values to the Recorder window.</dd>"+
@@ -568,9 +594,9 @@ public class LeedSpotTrackerHelp {
             "(it may be slower than the speed in frames per second, fps, if calculating the frames takes time).</p>"+
             "<p>If you have a movie with strong brightness variations, you may try setting 'Auto contrast stacks' "+
             "in <i>Edit&gt;Options&gt;Appearance...</i>&nbsp; Bright spots will appear saturated, but you may better see the faint ones.</p>"+
-            "<p>Why is there a <tt>(V)</tt> at the end of title of many image stacks? The <tt>(V)</tt> stands for "+
+            "<p><a name='virtualStack'>Why is there a <tt>(V)</tt> at the end of title of many image stacks? The <tt>(V)</tt> stands for "+
             "<i>virtual stack</i>, i.e., the images are not in memory but read from disk or calculated on the fly if "+
-            "required. The stack named <tt>..._SpotTracking</tt> (created by the ViPErLEED Spot Tracker) is a virtual "+
+            "required.</a> The stack named <tt>..._SpotTracking</tt> (created by the ViPErLEED Spot Tracker) is a virtual "+
             "stack with caching; its slices are kept in memory as long as there is sufficient memory. "+
             "You can click on the status line at the bottom of the main ImageJ toolbar to see the used and total memory. "+
             "Use <i>Edit&gt;Options&gt;Memory&amp;Threads...<i> to change the maximum amount of "+
@@ -632,14 +658,19 @@ public class LeedSpotTrackerHelp {
             "(use an unzip utility to view its contents).</p>";
     private static final String HELP_REFERENCES_HEADING =
             "<h2>References</h2>";
+    //NOTE: arXiv URLs need a slash at the end! E.g. https://arxiv.org/abs/2511.05448/
     private static final String HELP_FOOTNOTE1 =
-            "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva, "+
-            "<i>ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves</i>, "+
-            "Phys. Rev. Research, 2024. <a href='https://arxiv.org/abs/2406.18413/'>arXiv:2406.18413</a>.</p>";
+            "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Ki&szlig;linger, L. Hammer, U. Diebold, and M. Riva<br>"+
+            "<i>ViPErLEED package II: Spot tracking, extraction and processing of <i>I</i>(<i>V</i>) curves</i><br>"+
+            "<a href='https://doi.org/10.1103/PhysRevResearch.7.013006'>Phys. Rev. Research <b>7</b>, 013006 (2025)</a>.</p>";
     private static final String HELP_FOOTNOTE2 =
-            "<p><a name='msSmooth'>[2]</a> M. Schmid, D. Rath, and U. Diebold, "+
-            "<i>Why and how Savitzky-Golay Filters should be replaced</i>, "+
+            "<p><a name='msSmooth'>[2]</a> M. Schmid, D. Rath, and U. Diebold<br>"+
+            "<i>Why and how Savitzky-Golay Filters should be replaced</i><br>"+
             "<a href='https://doi.org/10.1021/acsmeasuresciau.1c00054'>ACS Measurement Science Au <b>2</b>, 185 (2022)</a>.</p>";
+    private static final String HELP_FOOTNOTE3 =
+            "<p><a name='Rsmooth'>[3]</a> A. M. Imre, L. Hammer, U. Diebold, M. Riva, M. Schmid<br>"+
+            "<i>An improved reliability factor for quantitative low-energy electron diffraction</i><br>"+
+            "<a href='https://arxiv.org/abs/2511.05448/'>arXiv:2511.05448</a>.</p>";
     private static final String ENDHTML =
             "</html>";
 
@@ -650,7 +681,7 @@ public class LeedSpotTrackerHelp {
                 HELP_SETINDICES1 + HELP_SETINDICES2 + HELP_SETINDICES3 +
                 HELP_SETRADIUS + HELP_TRACKSPOTS1 + HELP_TRACKSPOTS2 + HELP_TRACKSPOTS3 + HELP_SAVEDATA +
                 HELP_MOREMENU + HELP_GOOD_TO_KNOW + HELP_LICENSE +
-                HELP_REFERENCES_HEADING +HELP_FOOTNOTE1 + HELP_FOOTNOTE2 + ENDHTML;
+                HELP_REFERENCES_HEADING +HELP_FOOTNOTE1 + HELP_FOOTNOTE2 + HELP_FOOTNOTE3 + ENDHTML;
     }
 
     /** Returns the help string for the Dark & Flat processing dialog */
@@ -691,7 +722,7 @@ public class LeedSpotTrackerHelp {
     public static final String getTrackSpotsHelp() {
         String str = "<h1>Spot Tracking Options</h1>" +
                 HELP_TRACKSPOTS2;
-        return makeOutput(str, null, true);
+        return makeOutput(str, HELP_FOOTNOTE3, true);
     }
 
     /** Returns the help string for the "Save Data" dialog */

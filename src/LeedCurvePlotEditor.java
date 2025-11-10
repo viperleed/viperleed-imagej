@@ -23,19 +23,36 @@ import java.io.*;
  *  but one has to pass the parameters to the constructor of this class.
  */
 
-/** This code is part of the ViPErLEED package for LEED I(V) analysis.
+/** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
  *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
  *  When using and/or modifying this program for scientific work, please cite
  *  the paper describing it:
  *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2020-2024
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2020-2025
  */
+
 
 public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotionListener,
         ActionListener, ImageListener, KeyListener, MouseWheelListener {
@@ -197,6 +214,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
     //parameters (we must not read these from prefs since we can have several instances of this class)
     double     v0i, smoothEv, minSpanEv, curveStartEv, curveEndEv, noiseLimit;
     boolean    autoSelect;      //start with auto selection of groups and ranges
+    int        rFactorType;
     int        maxSmooth;       //no more smoothing like this (kernel halfwidth)
     boolean    plotNoise;       //option: whether to plot the noise function
     boolean    showSpotTrackerEnergy = true; //whether to show the energy of the SpotTracker
@@ -210,7 +228,6 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
     FloatArray badEnergies;     //energies of the worst agreement between equivalent curves
     FloatArray badnessValues;   //value of the worst agreement between equivalent curves
 
-    int rFactorType = LeedRFactor.R_PENDRY;
 
     //setting for individual beams or groups (these are in the edit file)
     boolean[]  useInput;        //for the beams (=data columns), whether the beam is selected as input
@@ -237,8 +254,8 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
     private static final String HELP_STRING =
             "<html>"+
             "<h1>ViPErLEED I(V) Curve Editor</h1>"+
+            "<p><small>Version: "+LEED_Spot_Tracker.VERSION+"</small></p>"+
             "<p><b>This ImageJ plugin is used to select usable data from LEED <i>I</i>(<i>V</i>) curves and smooth them.</b></p>"+
-            "<p>Version: "+LEED_Spot_Tracker.VERSION+"</p>"+
             "<p>This documentation contains a description of the <a href='#buttons'>GUI elements (buttons)</a>, "+
             "the typical <a href='#workflow'>work flow</a>, <a href='#ivEditorHints'>useful hints</a> "+
             "and <a href='#ivEditorLicense'>license information</a>.</p>"+
@@ -322,7 +339,9 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "Very large deviations may indicate that you have the wrong spot pattern file, i.e., the symmetry is wrong.)<br>"+
             "</li>"+
             "<li><a name='ivEditorOptions'><b>Options</b></a> (gearwheel symbol): Use the 'Options...' dialog to change the V0i value, "+
-            "use a fixed <i>x</i> axis with the full energy range for all curves, "+
+            "the R factor type used for the <i>Y</i> function displayed in the plot and for automatic selection "+
+            "(Pendry's R factor <i>R</i><sub>P</sub> or the new, &quot;smooth&quot; <i>R</i><sub>S</sub> <a href='#Rsmooth'>[3]</a>), "+
+            "to use a fixed <i>x</i> axis with the full energy range for all curves, "+
             "or to show also a noise estimate on the plot (blue). When the noise is plotted, "+
             "the <i>y</i> scale for this curve is always fixed (range 0&ndash;"+(float)NOISE_Y_RANGE+") "+
             "and the blue horizontal line is the noise limit for automatic selection.<br>"+
@@ -437,16 +456,20 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             "<p>A copy of these license texts and the source code is included in the jar archive holding this plugin "+
             "(use an unzip utility to view its contents).</p>"+
             "<h2>References</h2>"+
-            "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva, "+
-            "<i>ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves</i>, "+
-            "Phys. Rev. Research, 2024. <a href='https://arxiv.org/abs/2406.18413/'>arXiv:2406.18413</a></p>"+
+            "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Ki&szlig;linger, L. Hammer, U. Diebold, and M. Riva<br>"+
+            "<i>ViPErLEED package II: Spot tracking, extraction and processing of <i>I</i>(<i>V</i>) curves</i><br>"+
+            "<a href='https://doi.org/10.1103/PhysRevResearch.7.013006'>Phys. Rev. Research <b>7</b>, 013006 (2025)</a>.</p>"+
             "<p><a name='msSmooth'>[2]</a> M. Schmid, D. Rath, and U. Diebold, "+
-            "<i>Why and how Savitzky-Golay Filters should be replaced</i>, "+
+            "<i>Why and how Savitzky-Golay filters should be replaced</i>, "+
             "<a href='https://doi.org/10.1021/acsmeasuresciau.1c00054'>ACS Measurement Science Au <b>2</b>, 185 (2022)</a>.</p>"+
+            "<p><a name='Rsmooth'>[3]</a> A. M. Imre, L. Hammer, U. Diebold, M. Riva, M. Schmid<br>"+
+            "<i>An improved reliability factor for quantitative low-energy electron diffraction</i><br>"+
+            "<a href='https://arxiv.org/abs/2511.05448/'>arXiv:2511.05448</a>.</p>"+
             "</html>";
 
     public LeedCurvePlotEditor(String pathPrefix, LeedSpotPattern spotPattern, LeedIVData ivData, String editFilePath,
-            double v0i, double smoothEv, double minSpanEv, double curveStartEv, double curveEndEv, double noiseLimit, boolean autoSelect) {
+            double v0i, double smoothEv, double minSpanEv, double curveStartEv, double curveEndEv, double noiseLimit,
+            boolean autoSelect, int rFactorType) {
         this.pathPrefix = pathPrefix;
         this.spotPattern = spotPattern;
         this.energies = ivData.energies;
@@ -460,6 +483,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
         this.curveEndEv = curveEndEv;
         this.noiseLimit = noiseLimit;
         this.autoSelect = autoSelect;
+        this.rFactorType = rFactorType;
     }
 
     /** The Spot Editor is started by this, usually in a separate thread */
@@ -1169,11 +1193,11 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
                     smoothedMoreShifted[i] += -lowestMinValue;
                 double[] leftRFactorData=null, rightRFactorData=null;
                 if (leftIsGood)
-                    leftRFactorData = LeedRFactor.getRFactor(smoothedMore, smoothedMoreShifted, rangeLimits[2*iRange], leftGoodEnd, 0, v0i/eStep, null);
+                    leftRFactorData = LeedRFactor.getRFactorData(smoothedMore, smoothedMoreShifted, rangeLimits[2*iRange], leftGoodEnd, 0, rFactorType, v0i/eStep, null);
                 if (rightIsGood)
-                    rightRFactorData = LeedRFactor.getRFactor(smoothedMore, smoothedMoreShifted, rightGoodStart, rangeLimits[2*iRange+1], 0, v0i/eStep, null);
-                double leftRFactor = leftIsGood ? leftRFactorData[rFactorType] : Double.NaN;
-                double rightRFactor = rightIsGood ? rightRFactorData[rFactorType] : Double.NaN;
+                    rightRFactorData = LeedRFactor.getRFactorData(smoothedMore, smoothedMoreShifted, rightGoodStart, rangeLimits[2*iRange+1], 0, rFactorType, v0i/eStep, null);
+                double leftRFactor = leftIsGood ? LeedRFactor.toRFactor(leftRFactorData) : Double.NaN;
+                double rightRFactor = rightIsGood ? LeedRFactor.toRFactor(rightRFactorData) : Double.NaN;
                 double rFactor = Double.NaN;
                 if (leftIsGood && rightIsGood) {
                     final int N_OVERLAP = LeedRFactor.N_OVERLAP;
@@ -1542,7 +1566,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
                 }
             }
             rFactor[smoothRadius] = LEED_R_Factor_Between_Datasets.getRFactor(
-                    theoDataForR, smoothedForR, v0i, rFactorType, /*allowShift=*/true, /*showError=*/true);
+                    theoDataForR, smoothedForR, rFactorType, v0i, eStep, /*allowShift=*/true, /*showError=*/true);
             if (Double.isNaN(rFactor[smoothRadius])) return;
             if (IJ.debugMode) IJ.log("R="+rFactor[smoothRadius]+" @ smoothing "+eVSmooth[smoothRadius]);
             if (rFactor[smoothRadius] < bestRFactor) {
@@ -2185,9 +2209,9 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
                     if ((apply && useOutput[columns[0]]) || !useOutput[columns[0]]) {
                         smoothR[columns[0]] = noiseDependentSmooth && currentGroupNoise>0 && eVcurrentSmooth>0 ?
                                 smoothRadiusWithNoise(eVcurrentSmooth, currentGroupNoise, estimateNoise(g, outputRange[columns[0]][0], outputRange[columns[0]][1])) :
-                                LeedSmoother.invNoiseGainSquareToM(eVcurrentSmooth);
+                                LeedSmoother.invNoiseGainSquareToM(eVcurrentSmooth/eStep);
                     } else if (!useOutput[columns[0]])
-                        smoothR[columns[0]] = LeedSmoother.invNoiseGainSquareToM(eVcurrentSmooth);
+                        smoothR[columns[0]] = LeedSmoother.invNoiseGainSquareToM(eVcurrentSmooth/eStep);
                 } else if (task == 'E') {
                     if (apply && useOutput[columns[0]] || !useOutput[columns[0]]) {
                         int[] range = outputRange[columns[0]];
@@ -2215,6 +2239,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
     void showOptionsDialog() {
         GenericDialog gd = new GenericDialog(LEED_Curve_Editor.PLUGIN_NAME);
         gd.addNumericField("V0i", this.v0i, 1, 6, " eV (min. "+IJ.d2s(eStep+0.0499999,1)+")");
+        gd.addChoice("R factor type", LeedRFactor.R_FACTOR_NAMES, LeedRFactor.R_FACTOR_NAMES[rFactorType]);
         gd.addCheckbox("Fixed x axis (full energy range)", this.fixedXrange);
         gd.addCheckbox("Show Spot Tracker energy as vertical line", showSpotTrackerEnergy);
         gd.addCheckbox("Highlight current beams in Spot Tracker", highlightInSpotTracker);
@@ -2242,6 +2267,7 @@ public class LeedCurvePlotEditor implements Runnable, MouseListener, MouseMotion
             } else
                 return;
         }
+        rFactorType = gd.getNextChoiceIndex();
         boolean fixedXrange = gd.getNextBoolean();
         groupChanged = fixedXrange!=this.fixedXrange;    //enforces new x axis
         showSpotTrackerEnergy = gd.getNextBoolean();

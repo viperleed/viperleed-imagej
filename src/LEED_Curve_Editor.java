@@ -25,16 +25,33 @@ import java.io.File;
 /** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
  *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
  *  When using and/or modifying this program for scientific work, please cite
  *  the paper describing it:
  *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2020-2024
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2020-2025
  */
+
 
 public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener {
 
@@ -49,12 +66,14 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
     static final String PREFS_KEY_CURVESTARTEV = "curvestartev";
     static final String PREFS_KEY_CURVEENDEV = "curveendev";
     static final String PREFS_KEY_NOISELIMIT = "noiselimit";
+    static final String PREFS_KEY_RFACTORTYPE = "rfactortype";
     //default parameter values that we don't share with the Spot Tracker (eV except noise limit)
     static final double DEFAULT_SMOOTHEV = 5;
     static final double DEFAULT_MINSPANEV = 30;
     static final double DEFAULT_CURVESTARTEV = 50;
     static final double DEFAULT_CURVEENDEV = 1000;
     static final double DEFAULT_NOISELIMIT = 0.05;
+    static final int    DEFAULT_RFACTORTYPE = LeedRFactor.R_PENDRY;
 
     private String pathPrefix;
     private String patternFilePath;
@@ -68,6 +87,7 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
     private static final String HELP_STRING =
             "<html>"+
             "<h1>Parameters and Settings for the ViPErLEED I(V) Curve Editor</h1>"+
+            "<p><small>Version: "+LEED_Spot_Tracker.VERSION+"</small></p>"+
             "<ul>"+
             "<li><b>V0i</b>: Imaginary part of the inner potential  (strictly speaking, its absolute value), needed for calculating the <i>R</i> factor. "+
             "When averaging symmetry-equivalent curves that do not all include the full energy range, "+
@@ -94,6 +114,9 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
             "<li><b>Noise limit</b>: Automatic selection is done such that the estimated impact on the <i>R</i> factor is less than "+
             "the noise limit given. Typical values are around 0.05; lower values are more selective, higher values "+
             "lead to a larger total energy range (larger 'database'), at the cost of increased noise.</li>"+
+            "<li><b>R factor type</b>: Determines which R factor to use for the <i>Y</i> function displayed in the plot and "+
+            "for automatic selection. Currently supports Pendry's R factor <i>R</i><sub>P</sub> and "+
+            "the new, &quot;smooth&quot; <i>R</i><sub>S</sub> <a href='#Rsmooth'>[2]</a>.</li>"+
             "<li><b>Pattern file</b>: Usually, the information on symmetry-equivalent beams is read from the headings "+
             "of the file with the <i>I</i>(<i>V</i>) curves (spot groups in square brackets). If this is not the case or you want to use a different "+
             "symmetry, a spot pattern file can be specified. "+
@@ -128,9 +151,13 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
             "please cite the paper describing the program [<a href='#paper'>1</a>].</p>"+
             "<p>A copy of these license texts and the source code is included in the jar archive holding this plugin "+
             "(use an unzip utility to view its contents).</p>"+
-            "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva, "+
-            "<i>ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves</i>, "+
-            "Phys. Rev. Research, 2024. <a href='https://arxiv.org/abs/2406.18413/'>arXiv:2406.18413</a></p>"+
+            "<h2>References</h2>"+
+            "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Ki&szlig;linger, L. Hammer, U. Diebold, and M. Riva<br>"+
+            "<i>ViPErLEED package II: Spot tracking, extraction and processing of <i>I</i>(<i>V</i>) curves</i><br>"+
+            "<a href='https://doi.org/10.1103/PhysRevResearch.7.013006'>Phys. Rev. Research 7, 013006 (2025)</a>.</p>"+
+            "<p><a name='Rsmooth'>[2]</a> A. M. Imre, L. Hammer, U. Diebold, M. Riva, M. Schmid<br>"+
+            "<i>An improved reliability factor for quantitative low-energy electron diffraction</i><br>"+
+            "<a href='https://arxiv.org/abs/2511.05448/'>arXiv:2511.05448</a>.</p>"+
             "</html>";
     // The following is for Compile&Run in ImageJ 1.x only, to ensure everything is updated
     // if it is not directly called here.
@@ -210,6 +237,7 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
         double curveStartEv = Prefs.get(PREFS_KEY_PREFIX+PREFS_KEY_CURVESTARTEV, DEFAULT_CURVESTARTEV);
         double curveEndEv = Prefs.get(PREFS_KEY_PREFIX+PREFS_KEY_CURVEENDEV, DEFAULT_CURVEENDEV);
         double noiseLimit = Prefs.get(PREFS_KEY_PREFIX+PREFS_KEY_NOISELIMIT, DEFAULT_NOISELIMIT);
+        int rFactorType = (int)Prefs.get(PREFS_KEY_PREFIX+PREFS_KEY_RFACTORTYPE, DEFAULT_RFACTORTYPE);
 
         final double eStep = LeedUtils.getEnergyStep(ivData.energies);
         if (v0i < eStep) v0i = eStep;
@@ -229,7 +257,7 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
             gd.addMessage("WARNING: No write access to directory of input file:\n"+dir+"\nSaving a new edit file will fail!");
         gd.setInsets(5, 0, 5); //top left bottom
         gd.addMessage("I(V) Curves from file:\n"+filename);
-        gd.addNumericField("V0i", v0i, 1, 6, "eV (min."+IJ.d2s(eStep+0.0499999,1)+")");
+        gd.addNumericField("V0i", v0i, 2, 6, "eV (min."+IJ.d2s(eStep+0.00499999,2)+")");
         gd.addNumericField("Default energy range to smooth", smoothEv, 1, 6, "eV * **");
         gd.addNumericField("Min. data span per curve", minSpanEv, 0, 6, "eV (min. 2*V0i)");
         gd.addNumericField("Lowest energy to use", curveStartEv, 0, 6, "eV *");
@@ -237,6 +265,7 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
         gd.addCheckbox("Select curves/ranges automatically", editFilePath==null && !filename.toLowerCase().contains("theobeams"));
         autoSelectCbx = (Checkbox)(gd.getCheckboxes().get(0));
         gd.addNumericField("Noise limit for automatic selection", noiseLimit, 3, 6, " (typ. 0.02-0.08)");
+        gd.addChoice("R factor type", LeedRFactor.R_FACTOR_NAMES, LeedRFactor.R_FACTOR_NAMES[rFactorType]);
         gd.addMessage("* Used only if no previous edit file is selected\n"+
                 "    (for energy range, see 'Help' for details)\n"+
                 "** Energy range of moving average with same noise suppression,\n"+
@@ -279,6 +308,8 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
         noiseLimit = gd.getNextNumber();
         if (noiseLimit >= 0.001 && noiseLimit <= 0.3)
             Prefs.set(PREFS_KEY_PREFIX+PREFS_KEY_NOISELIMIT, noiseLimit);
+        rFactorType = gd.getNextChoiceIndex();
+        Prefs.set(PREFS_KEY_PREFIX+PREFS_KEY_RFACTORTYPE, rFactorType);
 
         if (spotPattern != null)
             ivData.setSpotPattern(spotPattern, /*showWarning=*/true);         //creates ivData.spotIndices
@@ -300,7 +331,8 @@ public class LEED_Curve_Editor implements PlugIn, DialogListener, ActionListener
 
         // S T A R T   P L O T   E D I T O R
         LeedCurvePlotEditor curveEditor = new LeedCurvePlotEditor(pathPrefix, spotPattern, ivData, editFilePath,
-                v0i, smoothEv, minSpanEv, curveStartEv, curveEndEv, noiseLimit, autoSelect); //no single-instance-listener, so LeedCurveEditor must not read prefs
+                v0i, smoothEv, minSpanEv, curveStartEv, curveEndEv, noiseLimit, autoSelect, rFactorType);
+                //no single-instance-listener, so LeedCurveEditor must not read prefs
         new Thread(curveEditor, "LEED_Curve_Editor").start();
     }
 
