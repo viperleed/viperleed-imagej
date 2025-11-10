@@ -25,9 +25,10 @@ import java.util.ArrayList;
  *  h(float), and k(float),
  *  gx, and gy in cartesian coordinates,
  *  beam group index: the same number for symmetry-equivalent beams. Spots of the same group must be in adjacent lines.
- *  further items may be present (currently igonred)
+ *  further items may be present (currently ignored)
  *
  *  Example:
+# any comment line
 (  h     k  ),    h   ,     k  ,     gx  ,    gy   , group
 (  1/2   0  ), 0.50000, 0.00000,  1.50000,  0.00000,     0
 ( -1/2   1/2),-0.50000, 0.50000, -0.75000,  1.29903,     0
@@ -38,22 +39,43 @@ import java.util.ArrayList;
  *
  */
 
-/** This code is part of the ViPErLEED package for LEED I(V) analysis.
+/** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
+ *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
  *  When using and/or modifying this program for scientific work, please cite
  *  the paper describing it:
  *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2019-2024
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2019-2025
  */
 
+
 public class LeedSpotPattern {
-    public static final int UNKNOWN_GROUP = -9999;    //group number if spot group is unknown (not too negative since this may become first group; then loops would run very long)
-    static final int N_NEAREST = 20;    //maximum number of nearest spots to list for each spot
+    public static final int UNKNOWN_GROUP = -9999;    // group number if spot group is unknown (not too negative since this may become first group; then loops would run very long)
+    static final int N_NEAREST = 20;    // maximum number of nearest spots to list for each spot
+    static final int MIN_SIZE = 2;      // a spot pattern must have at least this number of spots
+    static final int MIN_LINE_ITEMS = 6; // a line in a spot pattern file must have at least this number of items
+    static final String DEFAULT_COLUMN_HEADER_LINE = "(h k),h,k,gx,gy,group"; //column header if not read from file
     int size;
     String[]  spotNames;      // spot name, comma-separated h,k, no brackets, e.g. "1/2,3"
     String[]  spotNamesForOvly; // spot name, but with ',' replaced by '\n' for superstructure (for overlay)
@@ -64,17 +86,28 @@ public class LeedSpotPattern {
     int[]     spotGroups;     // group of symmetry-equivalent spots that the spot belongs to
     int[][]   nearestSpots;   // for each spot, the list of indices of nearest spots, sorted by distance (ascending)
     boolean[] isSuperstr;     // for each spot, whether it is a superstructure spot
+    String[]  sourceLines;    // for each spot, the line as read from the spot pattern file
+    String    columnHeaderLine;            // the line with the column headers
+    ArrayList<String> initialCommentLines; // the comment lines in beginning in the file, not including the column header line
     boolean   missingGroup;   // group information missing
     double    minDistanceSqr; // distance^2 of the two spots closest to each other in reciprocal space
+    boolean   hasSuperstructure;
+    boolean   hasEquivalentBeams;
     String  path;
     String  errorMessage;
-    boolean hasSuperstructure;
-    boolean hasEquivalentBeams;
 
     /** Creates a LeedSpotPattern by reading from a file.
      *  After the constructor was called, <code>getErrorMessage()</code> returns null if successful,
      *  or an error String on failure */
     public LeedSpotPattern(String path) {
+        this(path, /*keepSourceLines=*/false);
+    }
+    /** Creates a LeedSpotPattern by reading from a file.
+     *  After the constructor was called, <code>getErrorMessage()</code> returns null if successful,
+     *  or an error String on failure.
+     *  @param keepSourceLines When true, the lines of the input file containing the header
+     *  and the spot data are stored for later use */
+    public LeedSpotPattern(String path, boolean keepSourceLines) {
         if (path == null || path.length() == 0) {
             errorMessage = "No spot pattern file given";
             return;
@@ -90,12 +123,26 @@ public class LeedSpotPattern {
         }
         this.path = path;
         String[] lines = Tools.split(str, "\n");
-        int n = -1;             // minus one for the header
+        if (keepSourceLines)
+            initialCommentLines = new ArrayList<String>();
+        int n = 0;                      // counts data lines
+        boolean waitForHeader = true;   // column header not read yet
         for (int l=0; l<lines.length; l++) {
-            lines[l] = lines[l].trim();
-            if (LeedUtils.isCommentLine(lines[l]))
+            String line = lines[l];
+            if (LeedUtils.isCommentLine(line)) {
+                if (waitForHeader && keepSourceLines)
+                    initialCommentLines.add(line);    //initial comment lines
                 lines[l] = null;
-            else
+            } else if (waitForHeader) { // first non-comment line is column header
+                String[] items = line.trim().split(",");
+                if (items.length < MIN_LINE_ITEMS) {
+                    errorMessage = "Spot pattern file: Column header line too short:\n"+line;
+                    return;
+                }
+                columnHeaderLine = line;
+                waitForHeader = false;
+                lines[l] = null;
+            } else                      // data line, count them
                 n++;
         }
         makeArrays(n, true);
@@ -107,44 +154,24 @@ public class LeedSpotPattern {
         spotKy = new double[n];
         spotGroups = new int[n];
         isSuperstr = new boolean[n];
-        boolean waitForHeader = true;  //the first non-comment line is header
+        if (keepSourceLines)
+            sourceLines = new String[n];
         int i = 0;
-        int lastGroup = Integer.MIN_VALUE;
         for (int l=0; l<lines.length; l++) {
             String line = lines[l];
-            if (line != null) {
-                if (waitForHeader) {   //skip the header line
-                    waitForHeader = false;
-                    continue;
-                }
-                String[] items = line.split(",");
-                if (items.length < 6) {
-                    errorMessage = "Spot pattern file: Line "+(l+1)+" too short:\n"+line;
-                    return;
-                }
-                String withoutBrackets = items[0].trim().replaceFirst("\\(\\s*", "").replaceFirst("\\s*\\)", "");
-                spotNames[i] = withoutBrackets.trim().replaceFirst("[\\s;_|]+",",");
-                spotHs[i] = Tools.parseDouble(items[1]);
-                spotKs[i] = Tools.parseDouble(items[2]);
-                spotKx[i] = Tools.parseDouble(items[3]);
-                spotKy[i] = Tools.parseDouble(items[4]);
-                double spotGroup = (Tools.parseDouble(items[5]));
-                if (Double.isNaN(spotHs[i]) || Double.isNaN(spotKs[i]) || !((int)spotGroup == spotGroup)) {
-                    errorMessage = "Spot pattern file: Invalid number in line"+(l+1)+":\n"+line;
-                    return;
-                }
-                spotGroups[i] = (int)spotGroup;
-                lastGroup = spotGroups[i];
-                isSuperstr[i] = !LeedUtils.isInteger(spotHs[i]) || !LeedUtils.isInteger(spotKs[i]);
-                spotNamesForOvly[i] = isSuperstr[i] ? spotNames[i].replace(',','\n') : spotNames[i];
-                if (isSuperstr[i])
-                    hasSuperstructure = true;
-                i++;
-            }
+            if (line == null)
+                continue;               //comment & header lines have previously been set to null
+            if (keepSourceLines)
+                sourceLines[i] = line;
+            errorMessage = readSpot(i, line);
+            if (errorMessage != null)
+                return;
+            i++;
         }
         size = n;
-        if (size < 2 && errorMessage == null)
+        if (size < MIN_SIZE && errorMessage == null)
             errorMessage = "Spot pattern file: Only "+size+" spot(s) in file, this is not enough";
+        makeOverlayNames();
         makeNearestTable();
         checkForEquivalentBeams();
     }
@@ -179,8 +206,9 @@ public class LeedSpotPattern {
                 }
                 double group = braPos>=0 && ketPos>braPos ?
                         Tools.parseDouble(headings[iHead].substring(braPos+1, ketPos)) : UNKNOWN_GROUP;
-                if (!(group ==(int)group))  //NaN or non-integer
+                if (!(group ==(int)group)) //NaN or non-integer
                     group = UNKNOWN_GROUP;
+
                 if (groupsRequired && group == UNKNOWN_GROUP) {
                     errorMessage = "Invalid group in '"+headings[iHead].trim()+"'";
                     return;
@@ -218,6 +246,9 @@ public class LeedSpotPattern {
         }
         size = n;
         checkForEquivalentBeams();
+        makeOverlayNames();
+        if (!missingGroup && isFullSpotPattern())
+            makeNearestTable();
     }
 
     /** Creates a LeedSpotPattern by merging two LeedSpotPatterns.
@@ -292,6 +323,7 @@ public class LeedSpotPattern {
         }
         if (withKxKy) makeNearestTable();
         checkForEquivalentBeams();
+        makeOverlayNames();
     }
 
     /** Creates the arrays with a size of 'n'.
@@ -308,6 +340,7 @@ public class LeedSpotPattern {
             spotKy = new double[n];
         }
     }
+
     /** Adds a new spot from a different spot pattern, where i is the index in that spot pattern.
      *  The arrays must have sufficient size. */
     private void addSpot(LeedSpotPattern spotPattern, int i) {
@@ -325,6 +358,26 @@ public class LeedSpotPattern {
         if (spotGroups[size] == UNKNOWN_GROUP) missingGroup = true;
         size++;
     }
+
+    /** Reads the data of the i-th spot from a line of a csv file.
+     *  Returns null on success, or an error message */
+    String readSpot(int i, String line) {
+        String[] items = line.trim().split(",");
+        if (items.length < MIN_LINE_ITEMS)
+            return "Spot pattern file: Missing items";
+        String withoutBrackets = items[0].trim().replaceFirst("\\(\\s*", "").replaceFirst("\\s*\\)", "");
+        spotNames[i] = withoutBrackets.trim().replaceFirst("[\\s;_|]+",",");
+        spotHs[i] = Tools.parseDouble(items[1]);
+        spotKs[i] = Tools.parseDouble(items[2]);
+        spotKx[i] = Tools.parseDouble(items[3]);
+        spotKy[i] = Tools.parseDouble(items[4]);
+        double spotGroup = (Tools.parseDouble(items[5]));
+        if (Double.isNaN(spotHs[i]) || Double.isNaN(spotKs[i]) || !((int)spotGroup == spotGroup))
+            return "Spot pattern file: Invalid number";
+        spotGroups[i] = (int)spotGroup;
+        return null;
+    }
+
 
     /** Sets the 'hasEquivalentBeams' variable, to true if there is
      *  at least one group with at least two symmetry-equivalent spots.
@@ -348,6 +401,47 @@ public class LeedSpotPattern {
                 }
             }
         }
+    }
+
+    /** Creates the spot names for overlay and sets the isSuperstr array and
+     *  hasSuperstructure global variable */
+    private void makeOverlayNames() {
+        for (int i=0; i<size; i++) {
+            isSuperstr[i] = !LeedUtils.isInteger(spotHs[i]) || !LeedUtils.isInteger(spotKs[i]);
+            spotNamesForOvly[i] = isSuperstr[i] ? spotNames[i].replace(',','\n') : spotNames[i];
+            if (isSuperstr[i])
+                hasSuperstructure = true;
+        }
+    }
+
+    /** Saves the spot pattern as a file.
+     *  In case of error returns false; then getErrorMessage() provides details on the error.
+     *  Throws a RuntimeException if the Cartesian coordinates or group information is missing.. */
+    public boolean save(String path) {
+        if (!isFullSpotPattern())
+            throw new RuntimeException("Internal error: cannot save spot pattern without Cartesian coordinates");
+        if (!hasGroups())
+            throw new RuntimeException("Internal error: cannot save spot pattern without group numbers");
+        StringBuilder sb = new StringBuilder(500+80*size);
+        if (initialCommentLines != null) {
+            for (int i=0; i<initialCommentLines.size(); i++) {
+                sb.append(initialCommentLines.get(i));
+                sb.append('\n');
+            }
+        }
+        if (columnHeaderLine != null)
+            sb.append(columnHeaderLine);
+        else
+            sb.append(DEFAULT_COLUMN_HEADER_LINE);
+        sb.append('\n');
+        for (int i=0; i<size; i++) {
+            sb.append(getSourceLine(i));
+            sb.append('\n');
+        }
+        errorMessage = IJ.saveString(sb.toString(), path);
+        if (errorMessage != null)
+            errorMessage = "Error saving spot pattern file:\n"+errorMessage;
+        return errorMessage == null;
     }
 
     /** Returns the number of spots; 0 if not successfully read */
@@ -375,6 +469,14 @@ public class LeedSpotPattern {
     /** Returns the filename where this was read, or null */
     public String getFileName() {
         return (new File(path)).getName();
+    }
+
+    /** Returns the lines with the comments from the file header; these may be modified
+     *  e.g. by appending lines (don't forget the preceding '#').
+     *  Note that this is available only after the constructor with keepSourceLines=true;
+     *  otherwise returns null. */
+    public ArrayList<String> getInitialCommentLines() {
+        return initialCommentLines;
     }
 
     /** Returns the name (without brackets, e.g. "1/2,2/5") of the i-th spot */
@@ -424,6 +526,28 @@ public class LeedSpotPattern {
         return spotGroups[i];
     }
 
+    /** Returns the source line for the i-th spot (if available after calling the
+     *  constructor with keepSourceLines=true) or creates such a line suitable for a .csv file */
+    public String getSourceLine(int i) {
+        if (sourceLines != null && sourceLines[i] != null)
+            return sourceLines[i];
+        else
+            return spotNames[i]+","+spotHs[i]+","+spotKs[i]+","+spotKx[i]+","+spotKy[i]+","+spotGroups[i];
+    }
+
+    /** Sets the .csv source line for the i-th spot and reads the data from it.
+     *  This is useful for modifying a spot pattern before writing it out to a file.
+     *  Note that nearestSpots, isSuperstructure etc are NOT aupdated! */
+    public boolean setSourceLine(int i, String line) {
+        String error = readSpot(i, line);
+        if (error != null) {
+            errorMessage = "Internal error creating "+error+"\n"+line;
+            return false;
+        }
+        sourceLines[i] = line;
+        return true;
+    }
+
     /** Returns the first spot index for a given group, or -1 if none */
     public int getFirstSpotForGroup(int group) {
         return LeedUtils.arrayIndexOf(spotGroups, group);
@@ -468,6 +592,19 @@ public class LeedSpotPattern {
     /** Returns whether this pattern has information on goups of symmetry-equivalent beams */
     public boolean hasGroups() {
         return !missingGroup;
+    }
+
+    /** Returns whether the groups of symmetry-equivalent beams of this spot pattern
+     *  are sorted (ascending). Returns false if there is no information on groups. */
+    public boolean groupsAreSorted() {
+        if (missingGroup) return false;
+        int lastGroup = Integer.MIN_VALUE;
+        for (int i=0; i<size; i++) {
+            if (spotGroups[i] < lastGroup)
+                return false;
+            lastGroup = spotGroups[i];
+        }
+        return true;
     }
 
     /** Returns whether the given spot is a superstructure spot */
@@ -520,6 +657,16 @@ public class LeedSpotPattern {
      *  getErrorMessage() returns at text on it (otherwise it returns null after this call),
      *  and the corresponding indices are set to -1 */
     public int[] getIndices(String[] names) {
+		return getIndices(names, /*checkGroups=*/false);
+	}
+
+    /** Returns the indices corresponding to the spot names given as a list.
+     *  If there are indices that have not been found or have an invalid syntax,
+     *  getErrorMessage() returns at text on it (otherwise it returns null after this call),
+     *  and the corresponding indices are set to -1.
+     *  If 'checkGroups' is true, the error message also includes an error if the group numbers in square brackets
+     *  are inconsistent with the group numbers in the spot pattern. */
+    public int[] getIndices(String[] names, boolean checkGroups) {
         int[] indices = new int[names.length];
         errorMessage = null;
         String error = "";
@@ -549,7 +696,7 @@ public class LeedSpotPattern {
                         error += "spot not found: "+names[i];
                     }
                     nErr++;
-                } else if (group > Integer.MIN_VALUE && group != getGroup(index)) {
+                } else if (checkGroups && group > Integer.MIN_VALUE && group != getGroup(index)) {
                     if (nErr < maxNErr) {
                         if (nErr > 0) error += "\n";
                         error += getName(index)+"["+getGroup(index)+"]: group different from spotPattern: "+group;
@@ -630,7 +777,7 @@ public class LeedSpotPattern {
     /** Returns the reciprocal-space components of the vectors (1,0) and (0,1)
      *  as a four-element array kx10, ky10, kx01, ky01.
      *  The current version requires at least one spot (H, 0) and
-     *  one spot (0, K) to be present.
+     *  one spot (0, K) to be present. Better use Leed2DRegression!
      *  Returns null on failure. */
     /* currently unused 
     public static double[] getKxy10and01() {

@@ -19,18 +19,36 @@ import java.util.Arrays;
  *
  */
 
-/** This code is part of the ViPErLEED package for LEED I(V) analysis.
+/** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
+ *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
  *  When using and/or modifying this program for scientific work, please cite
  *  the paper describing it:
  *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2019-2024
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2019-2025
  */
+
 
 public class LeedIndexSliceSelector  implements DialogListener, ImageListener {
     public static final int MIN_N_MAXIMA = 3;        //we need three maxima for a basis
@@ -177,10 +195,10 @@ public class LeedIndexSliceSelector  implements DialogListener, ImageListener {
         Button okButton = gd.getButtons()[0];
         if (screenFitterArray != null) {    //we have 'Labels OK' and No='Name Spots' buttons
             Button noButton = gd.getButtons()[2];
-            noButton.setEnabled(nMaxima > MIN_N_MAXIMA && !blockOkButton);
-            okButton.setEnabled(nMaxima > MIN_N_MAXIMA && screenFitter != null && !blockOkButton);
+            noButton.setEnabled(nMaxima >= MIN_N_MAXIMA && !blockOkButton);
+            okButton.setEnabled(nMaxima >= MIN_N_MAXIMA && screenFitter != null && !blockOkButton);
         } else
-            okButton.setEnabled(nMaxima > MIN_N_MAXIMA && !blockOkButton);
+            okButton.setEnabled(nMaxima >= MIN_N_MAXIMA && !blockOkButton);
     }
 
     /** Shows circles at the spots found */

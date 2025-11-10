@@ -15,50 +15,85 @@ import ij.gui.Plot;
  *  https://en.wikipedia.org/wiki/Finite_difference_coefficient
  */
 
-/** This code is part of the ViPErLEED package for LEED I(V) analysis.
+/** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
+ *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
  *  When using and/or modifying this program for scientific work, please cite
  *  the paper describing it:
  *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2019-2024
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2019-2025
  */
 
 
 public class LeedRFactor {
-    public static final int R_PENDRY = 0, R_PMOD = 1;   //R factor types; what follows are indices in output array of other outputs
-    public static final int MAX_1 = 2, MAX_2 = 3;       //highest intensity in overlap region of the two curves (for normalization when plotting)
-    public static final int AVG_INTENSITY = 4;          //average intensity of the curves (actually sqrt(average intensity 1 * average intensity 2)
-    public static final int N_OVERLAP = 5;              //number of points in common region of the curves
-    public static final int RATIO = 6;                  //ratio of data2/data1 average
-    public static final int OUTPUT_SIZE = 7;            //the length of the output array 0...6
-    public static final String[] R_FACTOR_NAMES = new String[] {"R_Pendry", "R_PeMod"};
+    /** R factor type: Pendry's R factor */
+    public static final int R_PENDRY = 0;
+    /** R factor type: Smooth (but otherwise Pendry-like) R factor */
+    public static final int R_SMOOTH = 1; //R factor types; what follows are indices in output array of other outputs
+    /** Human-readable names of the R factors defined above */
+    public static final String[] R_FACTOR_NAMES = new String[] {"R_Pendry", "R_Smooth"};
+
+    /** Index in output array: numerator of the fraction that calculates the R factor. R =out[NUMERATOR]/out[DENOMINATOR] */
+    public static final int NUMERATOR = 0;
+    /** Index in output array: denominator of the fraction that calculates the R factor. R =out[NUMERATOR]/out[DENOMINATOR] */
+    public static final int DENOMINATOR = 1;
+    /** Index in output array: highest intensity of 1st curve in overlap region of the two curves (for normalization when plotting) */
+    public static final int MAX_1 = 2;
+    /** Index in output array: highest intensity of 2nd curve in overlap region of the two curves (for normalization when plotting) */
+    public static final int MAX_2 = 3;
+    /** Index in output array: number of points in common region of the curves */
+    public static final int N_OVERLAP = 4;
+    /** Index in output array: average intensity of the curves; actually sqrt(average intensity 1 * average intensity 2) */
+    public static final int AVG_INTENSITY = 5;
+    /** Index in output array: ratio of average intensities of the curves data2/data1 */
+    public static final int RATIO = 6;
+    /** Length of the output array. Elements 0 ... 6, i.e., NUMERATOR ... N_OVERLAP */
+    public static final int OUTPUT_SIZE = 7;
 
 
-    /** Returns the R factors in the range where the two curves overlap, the average intensity
+    /** Returns the numerator and denominator for calculating the R factor in the range
+     *  where the two curves overlap, the maximum intensities and the average intensity
      *  of the curves and maximum intensity of each curve in the overlap region, as well as
      *  the number of points of the overlap.
      *  The input arrays 'data1', 'data2' should be the intensities over energy (both with the
-     *  same energy steps; the 'shift' parameter should be used if the start energies are different).
+     *  same energy step; the 'shift' parameter should be used if the start energies are different).
      *  When 'shift' is nonzero, the 'data2' array is shifted by 'shift' points to the left.
      *  'v0iOverStep' is the imaginary part of the inner potential divided by the energy step.
      *  If the data contain negative points, an offset is added to all points
      *  of this data array to make the data non-negative.
      *  For simplicity, differentiation is done by taking the differenc of the data values at i+1 and i-1
-     *  The output array contains the R factors R_Pendry and R_PMod, the max intensities of data1 and data2
+     *  The output array contains the R factors R_Pendry and R_Smooth, the max intensities of data1 and data2
      *  as well as the average intensity in the overlap range, and the overlap range in points.
      *  An array for the output may be provided or null; the output is always in the array returned.
      *  The output array contains [0] the R factor and [1] the number of points used for the comparison
      *  (note that the two end points of each range where both data arrays are non-NaN are discarded) */
-    public static double[] getRFactor(double[] data1, double[] data2, int shift, double v0iOverStep, double[] output) {
-        return getRFactor(data1, data2, 0, data1.length, shift, v0iOverStep, output);
+    public static double[] getRFactorData(double[] data1, double[] data2, int shift, int type, double v0iOverStep, double[] output) {
+        return getRFactorData(data1, data2, 0, data1.length, shift, type, v0iOverStep, output);
     }
 
-    /** Returns the R factors in the range where the two curves overlap, the average intensity
+    /** Returns the numerator and denominator for calculating the R factor in the range
+     *  where the two curves overlap, the maximum intensities and the average intensity
      *  of the curves and maximum intensity of each curve in the overlap region, as well as
      *  the number of points of the overlap.
      *  The input arrays 'data1', 'data2' should be the intensities over energy (both with the
@@ -75,7 +110,7 @@ public class LeedRFactor {
      *  An array for the output may be provided or null; the output is always in the array returned.
      *  The output array contains [0] the R factor and [1] the number of points used for the comparison
      *  (note that the two end points of each range where both data arrays are non-NaN are discarded) */
-    public static double[] getRFactor(double[] data1, double[] data2, int iStart, int iEnd, int shift, double v0iOverStep, double[] output) {
+    public static double[] getRFactorData(double[] data1, double[] data2, int iStart, int iEnd, int shift, int type, double v0iOverStep, double[] output) {
         if (output == null || output.length < 2)
             output = new double[OUTPUT_SIZE];
 
@@ -91,7 +126,7 @@ public class LeedRFactor {
         offset1 = -offset1; offset2 = -offset2; //these offsets will be added
 
         double nPoints = 0;
-        double sumNominP = 0, sumDenomP = 0;    //nominator and denominator in Pendry R factor
+        double sumNumer = 0, sumDenom = 0;    //nominator and denominator in Pendry R factor
         double sumNominM = 0, sumDenomM = 0;    //nominator and denominator in Modified Pendry R factor
         double maxIntensity1 = 0, maxIntensity2 = 0;  //maximum intensity in overlap range
         double sumIntensity1 = 0, sumIntensity2 = 0;  //sum over intensity in overlap range
@@ -104,22 +139,21 @@ public class LeedRFactor {
         iEnd++;                                 //when the end is not array end, we need to read the next point as well
         if (iEnd > data1.length) iEnd = data1.length;
         if (iEnd > data2.length-shift) iEnd = data2.length-shift;
+        //boolean first=true;
         for (int i=iStart; i<iEnd; i++) {
             double right1 = data1[i] + offset1, right2 = data2[i+shift] + offset2;
             if (Double.isNaN(right1) || Double.isNaN(right2)) {
                 nPreviousOk = 0;                //no valid data, so we can't do anything
             } else {                            //valid data at least at this point
                 if (nPreviousOk >= 2) {         //enough data to differentiate at the mid point
-                    double y1 = calculateY(left1, mid1, right1, v0iOverStep, R_PENDRY);   //factor 0.5 because we have twice the derivative
-                    double y2 = calculateY(left2, mid2, right2, v0iOverStep, R_PENDRY);   //  (i.e., difference between points two steps apart)
-                    sumNominP += sqr(y2 - y1);
-                    sumDenomP += sqr(y2) + sqr(y1);
-                    /*
-                    y1 = calculateY(left1, mid1, right1, v0iOverStep, R_PMOD);
-                    y2 = calculateY(left2, mid2, right2, v0iOverStep, R_PMOD);
-                    sumNominM += sqr(y2 - y1);
-                    sumDenomM += sqr(y2) + sqr(y1);
-                    */
+                    double y1 = calculateY(left1, mid1, right1, v0iOverStep, type);
+                    double y2 = calculateY(left2, mid2, right2, v0iOverStep, type);
+                    //if (first){first=false;
+                    //  IJ.log("i1="+left1+","+mid1+","+right1+" i2="+left2+","+mid2+","+right2+" y1,2="+y1+","+y2);
+                    //}
+                    sumNumer += sqr(y2 - y1);
+                    sumDenom += sqr(y2) + sqr(y1);
+
                     if (mid1 > maxIntensity1) maxIntensity1 = mid1;
                     if (mid2 > maxIntensity2) maxIntensity2 = mid2;
                     sumIntensity1 += mid1;
@@ -131,10 +165,9 @@ public class LeedRFactor {
                 nPreviousOk++;
             }
         }
-        double rFactorP = sumNominP/sumDenomP;
-        //double rFactorM = sumNominM/sumDenomM;
-        output[R_PENDRY] = rFactorP;
-        //output[R_PMOD] = rFactorM;
+        output[NUMERATOR] = sumNumer;
+        output[DENOMINATOR] = sumDenom;
+        //IJ.log("R_beam="+(sumNumer/sumDenom)+" n="+nPoints+" V0i/step="+v0iOverStep);
         output[MAX_1] = maxIntensity1;
         output[MAX_2] = maxIntensity2;
         output[AVG_INTENSITY] = Math.sqrt(sumIntensity1*sumIntensity2)/nPoints;
@@ -184,7 +217,7 @@ public class LeedRFactor {
         return ranges.toArray();
     }
 
-    /** Returns the "Y" normalized to be within -0.99...+0.99 for an I(V) curve */
+    /** Returns the "Y" for an I(V) curve, normalized to be within -1...+1 for the maximum possible range */
     public static double[] getYcurve(double[] data, int type, double v0iOverStep, double[] output) {
         if (output == null || output.length < data.length)
             output = new double[data.length];
@@ -208,10 +241,6 @@ public class LeedRFactor {
                 nPreviousOk++;
             }
         }
-        double[] minMax = Tools.getMinMax(output);
-        double normalizeFactor = 0.99 / Math.max(minMax[1], -minMax[0]);
-        for (int i=0; i< output.length; i++)
-            output[i] *= normalizeFactor;
         return output;
     }
 
@@ -226,14 +255,32 @@ public class LeedRFactor {
         return sumNomin/sumDenom;
     }
 
-    /** Returns the 'Y' value from three successive points */
+    /** Returns the R factor from the output of an getRFactorData calculation */
+    public static double toRFactor(double[] rFactorData) {
+        return rFactorData[NUMERATOR]/rFactorData[DENOMINATOR];
+    }
+
+    /** Returns the 'Y' value from three successive points, normalized to the -1 to +1 range */
     static double calculateY(double left, double mid, double right, double v0iOverStep, int type) {
         if (type == R_PENDRY) {
-            double twoL = (right - left)/(mid + 1e-100);       //2*logarithmic derivative
-            double y = twoL/(1 + sqr(0.5*v0iOverStep * twoL)); //factor 2 does not hurt, will be normalized
+            double twoL = (right - left)/(mid + 1e-100)*v0iOverStep;       //2*v0i*logarithmic derivative
+            double y = twoL/(1 + 0.25*sqr(twoL));
             return y;
-        } else { // R_PMOD, not impelemented yet
-            return 0;
+        } else { // R_SMOOTH
+            final double ALPHA = 4, BETA = 0.15;
+            double deriv1 = 0.5*v0iOverStep*(right - left);    //1st derivative*V0i
+            double deriv2 = sqr(v0iOverStep)*(right + left - 2*mid); //2nd derivative*V0i²
+            /**/
+            double denom2 = sqr(mid) + 4*sqr(deriv1);
+            if (deriv2 > 0) {
+                double y1 = ALPHA*mid/deriv2 -0.5*ALPHA*sqr(deriv1/deriv2) + BETA;
+                if (y1 > 0) {
+                    double y2 = y1/Math.sqrt(1 + y1*y1);
+                    denom2 += sqr(y2*deriv2);
+                }
+            }
+            double ys = 2*deriv1/Math.sqrt(denom2);
+            return ys;
         }
     }
 

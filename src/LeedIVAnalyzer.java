@@ -19,18 +19,36 @@ import java.lang.ref.*;
  *  It shows the dialog, does the spot tracking and I(V) measurement on a stack
  *  and then creates plots and tables with the results. */
 
-/** This code is part of the ViPErLEED package for LEED I(V) analysis.
+/** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
+ *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
  *  When using and/or modifying this program for scientific work, please cite
  *  the paper describing it:
  *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2019-2024
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2019-2025
  */
+
 
 
 public class LeedIVAnalyzer implements Runnable {
@@ -169,6 +187,7 @@ public class LeedIVAnalyzer implements Runnable {
             double v0i = LeedParams.get(LeedParams.V0I);
             double eVsmooth = LeedParams.get(LeedParams.SMOOTHEV);
             double eVseparate = LeedParams.get(LeedParams.SPLITEV);
+            int rFactorType = (int)LeedParams.get(LeedParams.RFACTORTYPE);
 
             boolean useEnergies = xAxis == energies;
             String eVstr = useEnergies ? "eV " : "";
@@ -197,6 +216,7 @@ public class LeedIVAnalyzer implements Runnable {
             if (interactive) {
                 GenericDialog gd = new GenericDialog("Spot Tracking Options");
                 int v0iIndex = -1;
+                int eVsepIndex = -1;
                 gd.addNumericField("Noise rejection", minSignificance, 1, 6, "(1-10; typ. 2.0-3.0)");
                 gd.addNumericField("Search beam unseen for", searchAgain, 0, 6, eVstr+"(typ. 30)");
                 gd.addNumericField((useEnergies ? "Energy" : "Data")+" range for x, y smoothing", positionAveraging, 0, 6, eVstr+"(typ. 30)");
@@ -211,9 +231,11 @@ public class LeedIVAnalyzer implements Runnable {
                     v0iIndex = gd.getNumericFields().size() - 1;
                     gd.addNumericField("Energy range for smoothing", eVsmooth, 1, 6, "eV  *");
                     gd.addNumericField("Split energy range into", eVseparate, 0, 6, "eV sections **");
+                    gd.addChoice("R factor type", LeedRFactor.R_FACTOR_NAMES, LeedRFactor.R_FACTOR_NAMES[rFactorType]);
+                    eVsepIndex = gd.getNumericFields().size() - 1;
                     gd.addCheckbox("Quick Plots only ***", quickOutput);
-                    gd.addMessage("*    Typically, use V0i. Enter 0 or leave empty for no smoothing.\n"+
-                            "**   Enter 0 or leave empty to always analyze the full range\nper pair.\n"+
+                    gd.addMessage("*    Typically, use V0i. Enter 0 for no smoothing.\n"+
+                            "**   Enter 0 to always analyze the full range per pair.\n"+
                             "*** One I/V curve plot of equivalent beams and quality statistics.");
                 }
                 gd.addCheckbox("Create debug info", false);
@@ -224,11 +246,13 @@ public class LeedIVAnalyzer implements Runnable {
                 final double[] minDialogValues = new double[] {NO_SIGNIFICANCE, 0, 2*step, 0, //min values for minSignificance ... minEnergyRange
                         1e-10, 0, 10*step}; //min values for R factor analysis of equivalent beams
                 final int v0iIndexF = v0iIndex;
+                final int eVsepIndexF = eVsepIndex;
                 DialogListener dialogListener = new DialogListener() {  //only checks lower limit of numeric inputs
                     public boolean dialogItemChanged(GenericDialog gd, AWTEvent e) {
                         for (int i=0; i<N_NUMFIELDS; i++) {
                             double x = gd.getNextNumber();
-                            if (i == v0iIndexF) x = Math.abs(x); //strictly speaking, V0i is negative. We take the absolute value
+                            if (i == v0iIndexF) x = Math.abs(x);        //strictly speaking, V0i is negative. We take the absolute value
+                            if (i == eVsepIndexF && x==0) continue;     //allow 0 for 'don't split energy range'
                             if (!(x >= minDialogValues[i])) return false;
                         }
                         return true;
@@ -263,6 +287,7 @@ public class LeedIVAnalyzer implements Runnable {
                     eVseparate = gd.getNextNumber();
                     if (!(eVseparate > 10)) eVseparate = 1e7;
                     quickOutput = gd.getNextBoolean();
+                    rFactorType = gd.getNextChoiceIndex();
                 }
                 debug = gd.getNextBoolean();
                 String debugSpotName = gd.getNextString();
@@ -279,6 +304,7 @@ public class LeedIVAnalyzer implements Runnable {
                     LeedParams.set(LeedParams.V0I, v0i);
                     LeedParams.set(LeedParams.SMOOTHEV, eVsmooth);
                     LeedParams.set(LeedParams.SPLITEV, eVseparate);
+                    LeedParams.set(LeedParams.RFACTORTYPE, rFactorType);
                 }
             }
             if (!spotTracker.waitForStackUpdate()) {
@@ -1597,7 +1623,8 @@ if (spot==debugSpot)IJ.log("i="+i+" weight1="+weight1[i]+" atOrAfter="+nSpotsAtO
                 double v0i = LeedParams.get(LeedParams.V0I);
                 double eVsmooth = LeedParams.get(LeedParams.SMOOTHEV);
                 double eVseparate = LeedParams.get(LeedParams.SPLITEV);
-                p.plotRFactorOfEquivalent(v0i, eVsmooth, eVseparate);
+                int rFactorType = (int)LeedParams.get(LeedParams.RFACTORTYPE);
+                p.plotRFactorOfEquivalent(v0i, eVsmooth, eVseparate, rFactorType);
                 plotType = 'R';
                 break;
             case 4:

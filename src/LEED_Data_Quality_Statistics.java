@@ -20,15 +20,31 @@ import java.io.BufferedReader;
 /** This ImageJ plugin is part of the ViPErLEED package for LEED I(V) analysis.
  *  Licensed under GNU General Public License v3.0 or later (GPL-3.0-or-later),
  *  https://www.gnu.org/licenses/gpl-3.0.html
- *  The authors may decide later to put part of the auxiliary code in this work into the public domain,
- *  to allow incorporation into ImageJ if desired (ImageJ is in the public domain).
+ *  This means that the collection of ViPErLEED ImageJ plugins is free software:
+ *  you can redistribute it and/or modify it under the terms of the
+ *  GNU General Public License as published by the Free Software Foundation,
+ *  either version 3 of the License, or (at your option) any later version.
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ *  The collection of ViPErLEED ImageJ plugins is distributed
+ *  in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  The authors may decide later to put part of the auxiliary code in this work into
+ *  the public domain, to allow incorporation into ImageJ if desired.
+ *  (ImageJ is in the public domain.)
+ *
  *  The help text is licensed under the Creative Commons Attribution 4.0 (CC BY 4.0) license.
+ *
  *  When using and/or modifying this program for scientific work, please cite
  *  the paper describing it:
  *  M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva,
  *  ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves,
- *  Phys. Rev. Research, 2024. 
- *  @author Michael Schmid, IAP/TU Wien, 2020-2024
+ *  Phys. Rev. Research 7, 013006 (2025).
+ *  @author Michael Schmid, IAP/TU Wien, 2019-2025
  */
 
 
@@ -37,7 +53,6 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
     public static final int PLOT=0, LIST=1;
 
 	private static final String PLUGIN_NAME   = "Leed Data Quality Statistics";
-    private static final int    R_FACTOR_TYPE = LeedRFactor.R_PENDRY; //R factor type for plot
     private static final String[] TASKS = new String[] {
             "Plot","Data table"};
     private static final String HELP_STRING =
@@ -81,9 +96,9 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
             "please cite the paper describing the program [<a href='#paper'>1</a>].</p>"+
             "<p>You should find a copy of these license texts and the source code in the zip/jar archive holding this plugin "+
             "(use an unzip utility to view its contents).</p>"+
-            "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Kißlinger, L. Hammer, U. Diebold, and M. Riva, "+
-            "<i>ViPErLEED package II: Spot tracking, extraction and processing of I(V) curves</i>, "+
-            "Phys. Rev. Research, 2024.</p>"+
+            "<p><a name='paper'>[1]</a> M. Schmid, F. Kraushofer, A. M. Imre, T. Ki&szlig;linger, L. Hammer, U. Diebold, and M. Riva<br>"+
+            "<i>ViPErLEED package II: Spot tracking, extraction and processing of <i>I</i>(<i>V</i>) curves</i><br>"+
+            "<a href='https://doi.org/10.1103/PhysRevResearch.7.013006'>Phys. Rev. Research 7, 013006 (2025)</a>.</p>"+
             "</html>";
     LeedSpotPattern spotPattern;
     //dialog options
@@ -92,6 +107,7 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
     private static double v0i = Double.NaN;
     private static double eVsmooth = Double.NaN;
     private static double eVseparate = Double.NaN;
+    private static int    rFactorType = LeedRFactor.R_PENDRY; //R factor type for plot
     private static int task = PLOT;
 
     GenericDialog gd;
@@ -122,6 +138,7 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
         gd.addNumericField("Energy range to smooth", eVsmooth, 1, 6, "eV **");
         if (eVseparate > 1e6) eVseparate = 0;
         gd.addNumericField("Split energy range into", eVseparate, 0, 6, "eV sections ***");
+        gd.addChoice("R factor type", LeedRFactor.R_FACTOR_NAMES, LeedRFactor.R_FACTOR_NAMES[rFactorType]);
         gd.addMessage("*   Spot pattern file may be omitted if groups of equivalent "+
                 "beams are given in the I(V) input file [in square brackets].\n"+
                 "**  Energy range of moving average with same noise suppression, "+
@@ -145,6 +162,7 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
         if (Double.isNaN(eVsmooth)) eVsmooth = 0;
         eVseparate = gd.getNextNumber();
         if (!(eVseparate > 3)) eVseparate = 1e7;
+        rFactorType = gd.getNextChoiceIndex();
 
         LeedIVData ivData = LeedIVData.fromFile(inputFilePath, /*spotPattern=*/null, LeedIVData.E_ASCENDING|LeedIVData.ZERO_IS_NAN);
         if (ivData == null) return;
@@ -182,7 +200,7 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
             else
                 IJ.error(PLUGIN_NAME, "Error: Invalid spot pattern file\n"+spotPattern.getErrorMessage());
         }
-        analyze(task, ivData, spotPattern, v0i, eVsmooth, eVseparate);
+        analyze(task, ivData, spotPattern, v0i, eVsmooth, eVseparate, rFactorType);
         IJ.showProgress(1.0);
     }
 
@@ -202,9 +220,9 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
     }
 
     /** Analyzes the equivalent spots in the ivData */
-    static void analyze(int task, LeedIVData ivData, LeedSpotPattern spotPattern, double v0i, double eVsmooth, double eVseparate) {
+    static void analyze(int task, LeedIVData ivData, LeedSpotPattern spotPattern, double v0i, double eVsmooth, double eVseparate, int rFactorType) {
         String title = ivData.title+"_Quality_Statistics";
-        Object output = analyze(title, task, ivData.energies, ivData.spotIndices, ivData.data, spotPattern, v0i, eVsmooth, eVseparate);
+        Object output = analyze(title, task, ivData.energies, ivData.spotIndices, ivData.data, spotPattern, v0i, eVsmooth, eVseparate, rFactorType);
 
         if (output instanceof Plot)
             ((Plot)output).show();
@@ -218,7 +236,7 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
      *  returns a plot or ResultsTable, or null if no overlaps found.
      *  The 'indices' array contains the spot index for each column in the intensities 'intData' */
     public static Object analyze(String title, int task, double[] energies, int[] indices, double[][] intData,
-            LeedSpotPattern spotPattern, double v0i, double eVsmooth, double eVseparate) {
+            LeedSpotPattern spotPattern, double v0i, double eVsmooth, double eVseparate, int rFactorType) {
 
         if (indices.length != intData.length)
             throw new IllegalArgumentException("Inconsistent array lengths "+indices.length+"!="+intData.length);
@@ -276,8 +294,8 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
                     for (int s=0; s<nSubRanges; s++) {
                         int iS = iStart + (int)Math.round(s*(iEnd - iStart)/nSubRanges);
                         int iE = iStart + (int)Math.round((s + 1)*(iEnd - iStart)/nSubRanges);
-                        rAndOverlap = LeedRFactor.getRFactor(intData[i], intData[j], iS, iE, /*shift=*/0, v0iOverStep, rAndOverlap);
-                        rFArray.add((float)rAndOverlap[R_FACTOR_TYPE]);
+                        rAndOverlap = LeedRFactor.getRFactorData(intData[i], intData[j], iS, iE, /*shift=*/0, rFactorType, v0iOverStep, rAndOverlap);
+                        rFArray.add((float)LeedRFactor.toRFactor(rAndOverlap));
                         intArray.add((float)rAndOverlap[LeedRFactor.AVG_INTENSITY]);
                         ovlpArray.add((float)rAndOverlap[LeedRFactor.N_OVERLAP]);
                         groupArray.add(group);
@@ -343,10 +361,10 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
 
         if (task == PLOT) {
             return plotRFactorOfEquivalent(title, intensities, rFactors, overlaps,
-                    iNegatives, eNegatives, eStep, paramString);
+                    iNegatives, eNegatives, eStep, paramString, rFactorType);
         } else if (task == LIST) {
             ResultsTable outRt = tabulateRFactorOfEquivalent(title, intensities, rFactors, overlaps,
-                    eAvgs, groups, spotName1, spotName2, rangeStrs, iNegatives1, eNegatives2, iNegatives2, eNegatives2);
+                    eAvgs, groups, spotName1, spotName2, rangeStrs, iNegatives1, eNegatives2, iNegatives2, eNegatives2, rFactorType);
             return outRt;
         } else return null;
     }
@@ -355,9 +373,9 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
      *  Splits the ranges into ranges of roughly rangePoints
      *  Returns null if there are no overlapping spots */
     static Plot plotRFactorOfEquivalent(String title, float[] intensities, float[] rFactors,
-            float[] overlaps, float[] iNegatives, float[] eNegatives, double eStep, String paramString) {
+            float[] overlaps, float[] iNegatives, float[] eNegatives, double eStep, String paramString, int rFactorType) {
         int n = intensities.length;
-        String rFactorName = LeedRFactor.R_FACTOR_NAMES[R_FACTOR_TYPE];
+        String rFactorName = LeedRFactor.R_FACTOR_NAMES[rFactorType];
         double[] minMax = Tools.getMinMax(intensities);
         double plotXMin = minMax[0]*0.95;
         double plotXMax = Math.max(minMax[1]*1.05, 100.);
@@ -403,6 +421,9 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
                 plotXMax = minMaxINeg[1];
         }
         plot.setColor(Color.BLACK, null);
+        double[] minMaxOverlap = Tools.getMinMax(rSumOverlaps);
+        if (plotXMin > 0.5*minMaxOverlap[1])
+            plotXMin = 0.5*minMaxOverlap[1];
         plot.setLimits(plotXMin, plotXMax, 0, 1);
         plot.setLogScaleX();
         plot.setJustification(Plot.LEFT);
@@ -416,7 +437,7 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
     /** Creates a ResultsTable with the mutual R factors */
     static ResultsTable tabulateRFactorOfEquivalent(String title, float[] intensities, float[] rFactors,
             float[] overlaps, float[] eAvgs, int[] groups, ArrayList<String> spotName1, ArrayList<String> spotName2, ArrayList<String> rangeStrs,
-            float[] iNegatives, float[] eNegatives, float[] iNegatives2, float[] eNegatives2) {
+            float[] iNegatives, float[] eNegatives, float[] iNegatives2, float[] eNegatives2, int rFactorType) {
 
         ResultsTable outRt = new ResultsTable();
         for (int i=0; i<intensities.length; i++) {
@@ -426,7 +447,7 @@ public class LEED_Data_Quality_Statistics implements PlugIn, DialogListener {
             outRt.addValue("Beam2", spotName2.get(i));
             outRt.addValue("Range", rangeStrs.get(i));
             outRt.addValue("E_Avg", eAvgs[i]);
-            outRt.addValue(LeedRFactor.R_FACTOR_NAMES[R_FACTOR_TYPE], rFactors[i]);
+            outRt.addValue(LeedRFactor.R_FACTOR_NAMES[rFactorType], rFactors[i]);
             outRt.addValue("Intensity", intensities[i]);
             outRt.addValue("nPoints", overlaps[i]);
             if (iNegatives.length > 0) {
